@@ -1,3 +1,9 @@
-object main extends App {
-  println("asdasd")
-}
+//import java.io.ObjectOutputStream
+//
+//object main extends App {
+//
+//
+//  val b = Body("/root/", "data")
+//
+//  ObjectOutputStream
+//}
