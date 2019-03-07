@@ -6,8 +6,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
 
 
-case class Body(@transient var directory: String, path: String) extends Serializable {
+case class Body(@transient var directory: String, path: String) extends Serializable with ClockInfluencer  {
   val numberPattern: Regex = "(?:^|/)\\.\\.(/|$)".r
+  override var timestamp: Long = 0
 
   import java.io.FileInputStream
 
@@ -22,6 +23,8 @@ case class Body(@transient var directory: String, path: String) extends Serializ
     new ObjectOutputStream(output).writeObject(this)
 
     val byteArray = new Array[Byte](4 * 1024)
+
+    sendStamp()
 
     Future {
       var len = input.read(byteArray)
@@ -53,6 +56,8 @@ case class Body(@transient var directory: String, path: String) extends Serializ
     val input = new BufferedInputStream(ds)
 
     val byteArray = new Array[Byte](4 * 1024)
+
+    receiveStamp()
 
     Future {
       var len = input.read(byteArray)
