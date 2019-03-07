@@ -1,45 +1,53 @@
-import java.io.{BufferedInputStream, DataInputStream, FileOutputStream}
+import java.io._
 import java.net.Socket
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class Body(_path: String) extends Serializable {
+case class Body(@transient var directory: String, path: String) extends Serializable {
 
   import java.io.FileInputStream
 
+  def bind(node: Node): Unit = {
+    directory = node.root
+  }
+
   def send(conn: Socket): Unit = {
-    val input = new BufferedInputStream(new FileInputStream(path))
+    val input = new BufferedInputStream(new FileInputStream(directory + path))
     val output = conn.getOutputStream
 
-    val byteArray = Array[Byte]()
+    new ObjectOutputStream(output).writeObject(this)
+
+    val byteArray = new Array[Byte](4 * 1024)
 
     Future {
-      while (input.read(byteArray) != -1) {
-        output.write(byteArray)
+      var len = input.read(byteArray)
+      while (len != -1) {
+        output.write(byteArray, 0, len)
+        len = input.read(byteArray)
       }
       output.flush()
       input.close()
       output.close()
       conn.close()
-      println("DONE B")
     }(ExecutionContext.global)
   }
 
-  def receive(ds: DataInputStream): Unit = {
-    val output = new FileOutputStream(path)
+  def receive(ds: InputStream): Unit = {
+    val output = new FileOutputStream(directory + path)
 
     val input = new BufferedInputStream(ds)
 
-    val byteArray = Array[Byte]()
+    val byteArray = new Array[Byte](4 * 1024)
 
     Future {
-      while (input.read(byteArray) != -1) {
-        output.write(byteArray)
+      var len = input.read(byteArray)
+      while (len != -1) {
+        output.write(byteArray, 0, len)
+        len = input.read(byteArray)
       }
       input.close()
       output.close()
     }(ExecutionContext.global)
   }
 
-  def path: String = _path
 }

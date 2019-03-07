@@ -1,10 +1,10 @@
 import java.net.{ServerSocket, Socket}
 
-class Node(val port: Int, filesDirectory: String) {
+class Node(val port: Int, val root: String) {
   private val acceptSocket = new ServerSocket(port)
 
-  val core = new Core(acceptSocket)
-  core.run()
+  val core = new Core(acceptSocket, this)
+  new Thread(core).start()
   val controller = new Controller
   var neighbours: List[Address] = List()
 
@@ -19,6 +19,6 @@ class Node(val port: Int, filesDirectory: String) {
     }
   }
 
-  def createBody(filePath: String): Body = Body(filesDirectory + "" + filePath)
+  def createBody(filePath: String): Body = Body(root, filePath)
 }
 
