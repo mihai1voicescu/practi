@@ -6,7 +6,7 @@ object main extends App {
 
   node1.setNeighbours(List(Address(InetAddress.getByName("localhost"), 9001)))
 
-  val body = node1.createBody("very/deep/structured/file.txt")
+  val body = node1.createBody("very/deep/file.txt")
 
   node1.sendToAllNeighbours(body)
 }
