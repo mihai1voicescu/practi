@@ -17,6 +17,7 @@ case class ServerThread(socket: Socket, node: Node) extends Thread("ServerThread
 
 
       val body = in.readObject().asInstanceOf[Body]
+      println(this.socket.toString + " Received body " + body.path)
 
       body.bind(node)
       body.receive(ds)
