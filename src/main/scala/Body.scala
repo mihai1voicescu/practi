@@ -1,5 +1,6 @@
 import java.io._
 import java.net.Socket
+import java.nio.file.{Files, Paths}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
@@ -41,6 +42,13 @@ case class Body(@transient var directory: String, path: String) extends Serializ
       throw Exceptions.SecurityException("SANDBOX_ERROR", "Body with potential sandbox injection detected.")
 
     val output = new FileOutputStream(directory + path)
+    val filePath = directory + path
+
+    // If the path does not exist yet, create the necessary parent folders
+    if (!Files.exists(Paths.get(filePath))) {
+      val file = new File(new File(filePath).getParent)
+      file.mkdirs()
+    }
 
     val input = new BufferedInputStream(ds)
 

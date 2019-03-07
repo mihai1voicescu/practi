@@ -15,6 +15,7 @@ class Node(val port: Int, val root: String, val hostname :String = "localhost") 
   def sendToAllNeighbours(body: Body): Unit =
   {
     for (n <- neighbours) {
+      println(this.acceptSocket.toString + " Sending body " + body.path)
       body.send(new Socket(n.host, n.port))
     }
   }
