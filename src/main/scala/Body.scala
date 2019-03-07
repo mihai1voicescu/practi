@@ -44,15 +44,14 @@ case class Body(@transient var directory: String, path: String) extends Serializ
     if (m.isDefined)
       throw Exceptions.SecurityException("SANDBOX_ERROR", "Body with potential sandbox injection detected.")
 
-    val output = new FileOutputStream(directory + path)
     val filePath = directory + path
-
     // If the path does not exist yet, create the necessary parent folders
     if (!Files.exists(Paths.get(filePath))) {
       val file = new File(new File(filePath).getParent)
       file.mkdirs()
     }
 
+    val output = new FileOutputStream(directory + path)
     val input = new BufferedInputStream(ds)
 
     val byteArray = new Array[Byte](4 * 1024)

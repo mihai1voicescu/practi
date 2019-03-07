@@ -2,7 +2,9 @@ import java.io._
 import java.net.{ServerSocket, Socket, SocketException}
 
 
-class Core(socket: ServerSocket, val node: Node) extends Runnable {
+class Core(socket: ServerSocket, val node: Node, logLocation: String) extends Runnable {
+  private val log = new Log(new File(logLocation))
+
   override def run() {
     while (true)
       ServerThread(socket.accept(), node).start()
