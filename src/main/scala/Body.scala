@@ -16,7 +16,7 @@ case class Body(@transient var directory: String, path: String) extends Serializ
     directory = node.root
   }
 
-  def send(conn: Socket): Unit = {
+  def send(conn: Socket, withStamp :Boolean = true): Unit = {
     val input = new BufferedInputStream(new FileInputStream(directory + path))
     val output = conn.getOutputStream
 
@@ -24,7 +24,8 @@ case class Body(@transient var directory: String, path: String) extends Serializ
 
     val byteArray = new Array[Byte](4 * 1024)
 
-    sendStamp()
+    if (withStamp)
+      sendStamp()
 
     Future {
       var len = input.read(byteArray)
