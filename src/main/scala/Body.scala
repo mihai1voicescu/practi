@@ -2,8 +2,11 @@ import java.io._
 import java.net.Socket
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.matching.Regex
+
 
 case class Body(@transient var directory: String, path: String) extends Serializable {
+  val numberPattern: Regex = "(?:^|/)\\.\\.(/|$)".r
 
   import java.io.FileInputStream
 
@@ -33,6 +36,10 @@ case class Body(@transient var directory: String, path: String) extends Serializ
   }
 
   def receive(ds: InputStream): Unit = {
+    val m = numberPattern.findFirstMatchIn(path)
+    if (m.isDefined)
+      throw Exceptions.SecurityException("SANDBOX_ERROR", "Body with potential sandbox injection detected.")
+
     val output = new FileOutputStream(directory + path)
 
     val input = new BufferedInputStream(ds)
