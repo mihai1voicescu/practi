@@ -1,5 +1,6 @@
 import java.io._
 import java.net.Socket
+import java.nio.file.{Files, Paths}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,7 +34,15 @@ case class Body(@transient var directory: String, path: String) extends Serializ
   }
 
   def receive(ds: InputStream): Unit = {
-    val output = new FileOutputStream(directory + path)
+    val filePath = directory + path
+
+    // If the path does not exist yet, create the necessary parent folders
+    if (!Files.exists(Paths.get(filePath))) {
+      val file = new File(new File(filePath).getParent)
+      file.mkdirs()
+    }
+
+    val output = new FileOutputStream(new File(filePath))
 
     val input = new BufferedInputStream(ds)
 
