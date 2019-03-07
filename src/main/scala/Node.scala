@@ -1,7 +1,7 @@
-import java.net.{ServerSocket, Socket}
+import java.net.{InetAddress, ServerSocket, Socket}
 
-class Node(val port: Int, val root: String) {
-  private val acceptSocket = new ServerSocket(port)
+class Node(val port: Int, val root: String, val hostname :String = "localhost") {
+  private val acceptSocket = new ServerSocket(port, 0, InetAddress.getByName(hostname))
 
   val core = new Core(acceptSocket, this)
   new Thread(core).start()
