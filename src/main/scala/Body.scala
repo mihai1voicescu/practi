@@ -1,4 +1,4 @@
-import java.io.{BufferedInputStream, BufferedOutputStream, DataInputStream, FileOutputStream}
+import java.io.{BufferedInputStream, DataInputStream, FileOutputStream}
 import java.net.Socket
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -11,13 +11,13 @@ case class Body(_path: String) extends Serializable {
     val input = new BufferedInputStream(new FileInputStream(path))
     val output = conn.getOutputStream
 
-
     val byteArray = Array[Byte]()
 
     Future {
       while (input.read(byteArray) != -1) {
         output.write(byteArray)
       }
+      output.flush()
       input.close()
       output.close()
       conn.close()
@@ -26,8 +26,6 @@ case class Body(_path: String) extends Serializable {
   }
 
   def receive(ds: DataInputStream): Unit = {
-
-
     val output = new FileOutputStream(path)
 
     val input = new BufferedInputStream(ds)
@@ -43,7 +41,5 @@ case class Body(_path: String) extends Serializable {
     }(ExecutionContext.global)
   }
 
-  def path: String = {
-    globals.root + _path
-  }
+  def path: String = _path
 }
