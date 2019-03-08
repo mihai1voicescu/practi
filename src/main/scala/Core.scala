@@ -1,6 +1,8 @@
 import java.io._
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 
+import log.Log
+
 //import akka.http.scaladsl.Http
 //import akka.http.scaladsl.model.HttpMethods._
 //import akka.http.scaladsl.model._
@@ -9,18 +11,18 @@ class Core(val node: Node, logLocation: String) extends Runnable {
   private val log = new Log(new File(logLocation))
 
   private val acceptSocket = new ServerSocket(node.port, 50, InetAddress.getByName(node.hostname))
-//  private val httpServer = Http().bind(interface = node.hostname, port = node.port)
-//
-//
-//  val requestHandler: HttpRequest => HttpResponse = {
-//    case HttpRequest(GET, uri, _, _, _) =>
-//      val body = Body(node.root, uri.path.toString())
-//      body.send(httpSocket, false)
-//
-//    case r: HttpRequest =>
-//      r.discardEntityBytes() // important to drain incoming HTTP Entity stream
-//      HttpResponse(404, entity = "Unknown resource!")
-//  }
+  //  private val httpServer = Http().bind(interface = node.hostname, port = node.port)
+  //
+  //
+  //  val requestHandler: HttpRequest => HttpResponse = {
+  //    case HttpRequest(GET, uri, _, _, _) =>
+  //      val body = Body(node.root, uri.path.toString())
+  //      body.send(httpSocket, false)
+  //
+  //    case r: HttpRequest =>
+  //      r.discardEntityBytes() // important to drain incoming HTTP Entity stream
+  //      HttpResponse(404, entity = "Unknown resource!")
+  //  }
 
   override def run() {
     while (true)

@@ -1,10 +1,10 @@
 import java.net.{InetAddress, ServerSocket, Socket}
 
-class Node(val port: Int, val root: String, val hostname :String = "localhost", logLocation: String) {
+class Node(val port: Int, val root: String, val hostname :String = "localhost", val logLocation: String) {
 
   val core = new Core(this, logLocation)
   new Thread(core).start()
-  val controller = new Controller
+  val controller = new Controller(this)
   var neighbours: List[Address] = List()
 
   def setNeighbours(neighbours: List[Address]): Unit = {

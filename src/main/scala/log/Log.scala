@@ -1,3 +1,4 @@
+package log
 import java.io._
 
 class Log(file: File) {
