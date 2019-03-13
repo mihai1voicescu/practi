@@ -2,12 +2,12 @@ import java.io._
 import java.net.Socket
 import java.nio.file.{Files, Paths}
 
+import helper.fileHelper
+
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.matching.Regex
 
 
 case class Body(@transient var directory: String, path: String) extends Serializable with ClockInfluencer  {
-  val numberPattern: Regex = "(?:^|/)\\.\\.(/|$)".r
   override var timestamp: Long = 0
 
   import java.io.FileInputStream
@@ -41,9 +41,7 @@ case class Body(@transient var directory: String, path: String) extends Serializ
   }
 
   def receive(ds: InputStream): Unit = {
-    val m = numberPattern.findFirstMatchIn(path)
-    if (m.isDefined)
-      throw Exceptions.SecurityException("SANDBOX_ERROR", "Body with potential sandbox injection detected.")
+    fileHelper.checkSandbox(path)
 
     val filePath = directory + path
     // If the path does not exist yet, create the necessary parent folders
