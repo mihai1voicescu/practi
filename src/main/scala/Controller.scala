@@ -2,8 +2,7 @@ import java.io._
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 
 import helper.socketHelper
-import invalidation._
-import log.Log
+import invalidationlog.{Invalidation, InvalidationProcessor, Log}
 import clock.clock
 
 import scala.collection.mutable

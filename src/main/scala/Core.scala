@@ -6,7 +6,7 @@ import akka.stream.ActorMaterializer
 import helper.fileHelper
 
 import scala.concurrent.ExecutionContextExecutor
-import log.Log
+import invalidationlog.Log
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 

@@ -1,4 +1,4 @@
-package log
+package invalidationlog
 import java.io._
 
 class Log(filepath: String) {
