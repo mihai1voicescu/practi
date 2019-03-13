@@ -1,3 +1,5 @@
+package clock
+
 trait ClockInfluencer {
   var timestamp : Long
 

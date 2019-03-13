@@ -1,3 +1,5 @@
+package clock
+
 object clock {
   var time :Long = 0
 

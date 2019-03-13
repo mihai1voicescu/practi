@@ -1,35 +1,49 @@
-import java.io.{DataInputStream, File, IOException, ObjectInputStream}
+import java.io._
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 
 import helper.socketHelper
 import invalidation._
 import log.Log
+import clock.clock
 
-case class Controller(node: Node) extends Runnable {
+import scala.collection.mutable
 
-  var log = new Log(new File(node.logLocation))
+case class Controller(node: Node) extends Thread("ControlThread") {
+
+  var log = new Log(node.logLocation)
   val processor = new InvalidationProcessor(log)
+  val peerControllers = new mutable.HashMap[Int, Socket]()
 
-  //TODO change port to something controllable
-  private val acceptSocket = new ServerSocket(node.port + 10, 50, InetAddress.getByName(node.hostname))
+  private val acceptSocket = new ServerSocket( node.getControllerPort, 50, InetAddress.getByName(node.hostname))
+  this.start()
 
   /**
     * Controller method that is responsible for sending invalidations for all neighbors found in @node
     *
     * @param invalidation
-    * @param node
     */
-  def sendInvalidationForAllNeighbours(invalidation: Invalidation, node: Node): Unit = {
-    node.neighbours.foreach(n => sendMessage(n, invalidation))
-
+  def sendInvalidationForAllNeighbours(invalidation: Invalidation): Unit = {
+    // stamp the operation
+    invalidation.sendStamp()
+    peerControllers.foreach { case (_, socket)
+    =>
+      new ObjectOutputStream(socket.getOutputStream).writeObject(invalidation)
+      node.getControllerSocket.getOutputStream.flush()
+    }
   }
 
   def requestBody(): Unit = {
 
   }
 
-  private def sendMessage(address: Address, data: Invalidation): Unit = {
-    socketHelper.send(new Socket(address.host, address.port), data)
+  def connectToNodeController(virtualNode: VirtualNode): Unit = {
+    peerControllers(virtualNode.id) = virtualNode.getControllerSocket
+  }
+
+  def invalidate(objectId: String): Unit = {
+    val invalidation = Invalidation(objectId, clock.time, node.id)
+
+    sendInvalidationForAllNeighbours(invalidation)
   }
 
   override def run(): Unit = {
@@ -45,23 +59,29 @@ case class Controller(node: Node) extends Runnable {
   case class InvalidationThread(socket: Socket) extends Thread("InvalidationThread") {
 
     override def run(): Unit = {
-      try {
-        val ds = new DataInputStream(socket.getInputStream)
-        val in = new ObjectInputStream(ds)
+      val ds = new DataInputStream(socket.getInputStream)
 
+      // controllers need to be continuously connected to each other awaiting invalidations
+      while (true) {
 
-        val invalidation = in.readObject().asInstanceOf[Invalidation]
-        println(this.socket.toString + " Received invalidation with timestamp: " + invalidation.timestamp)
+        try {
+          // reset the Object input stream each time
+          val in = new ObjectInputStream(ds)
+          // block until invalidations actually come
+          val invalidation = in.readObject().asInstanceOf[Invalidation]
+          println(this.socket.toString + " Received invalidation with timestamp: " + invalidation.timestamp)
 
-        processor.process(invalidation)
-      }
-      catch {
-        case e: SocketException =>
-          () // avoid stack trace when stopping a client with Ctrl-C
-        case e: IOException =>
-          e.printStackTrace();
+          processor.process(invalidation)
+        }
+        catch {
+          case e: SocketException =>
+            () // avoid stack trace when stopping a client with Ctrl-C
+          case e: IOException =>
+            e.printStackTrace();
+        }
       }
     }
+
 
   }
 

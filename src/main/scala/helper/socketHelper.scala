@@ -16,6 +16,7 @@ object socketHelper {
     *
     * @param conn
     * @param objectToSend
+    * FIXME Does not actually work
     */
   def send(conn: Socket, objectToSend: Serializable): Unit = {
     val output = conn.getOutputStream
@@ -38,6 +39,7 @@ object socketHelper {
     * @param conn target socket connection
     * @param objectToSend
     * @param fileInputStream
+    * FIXME Does not actually work
     */
   def send(conn: Socket, objectToSend: Serializable, fileInputStream: FileInputStream): Unit = {
     val input = new BufferedInputStream(fileInputStream)

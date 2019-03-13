@@ -1,14 +1,27 @@
 import java.net.{InetAddress, ServerSocket, Socket}
 
-class Node(val port: Int, val root: String, val hostname :String = "localhost", val logLocation: String) {
+import scala.collection.mutable.ListBuffer
 
+class Node(port: Int, val root: String, hostname :String = "localhost", id : Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
   val core = new Core(this, logLocation)
   new Thread(core).start()
-  val controller = new Controller(this)
-  var neighbours: List[Address] = List()
+  val controller = Controller(this)
+  var neighbours: ListBuffer[VirtualNode] = ListBuffer()
 
-  def setNeighbours(neighbours: List[Address]): Unit = {
-    this.neighbours = neighbours
+  def addNeighbours(neighbours: List[VirtualNode]): Unit = {
+    this.neighbours ++= neighbours
+
+    for (n <- neighbours)
+      controller.connectToNodeController(n)
+  }
+
+  def addNeighbour(neighbour: VirtualNode): Unit = {
+    this.neighbours += neighbour
+    controller.connectToNodeController(neighbour)
+  }
+
+  def invalidate(objectId: String): Unit = {
+    controller.invalidate(objectId)
   }
 
   def sendToAllNeighbours(body: Body): Unit =
@@ -18,8 +31,8 @@ class Node(val port: Int, val root: String, val hostname :String = "localhost", 
     }
   }
 
-  def sendBody(address: Address, body: Body): Unit = {
-    core.sendBody(address, body)
+  def sendBody(virtualNode: VirtualNode, body: Body): Unit = {
+    core.sendBody(virtualNode, body)
   }
 
   def createBody(filePath: String): Body = Body(root, filePath)

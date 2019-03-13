@@ -34,7 +34,12 @@ class Core(val node: Node, logLocation: String) extends Runnable {
           fileHelper.checkSandbox(name)
           storeUploadedFile("file", fileHelper.tempDestination) {
             case (meta, file) =>
-              Files.move(file.toPath, Paths.get(node.root + name + "/" + meta.getFileName), StandardCopyOption.REPLACE_EXISTING)
+              val objectId = name + "/" + meta.getFileName
+              fileHelper.checkSandbox(objectId)
+
+              Files.move(file.toPath, Paths.get(node.root + objectId), StandardCopyOption.REPLACE_EXISTING)
+              node.invalidate(objectId)
+
               complete(StatusCodes.OK)
           }
         }
@@ -42,10 +47,10 @@ class Core(val node: Node, logLocation: String) extends Runnable {
     }
 
 
-  private val log = new Log(new File(logLocation))
+  private val log = new Log(logLocation)
 
-  private val acceptSocket = new ServerSocket(node.port, 50, InetAddress.getByName(node.hostname))
-  private val httpServer = Http().bindAndHandle(route, interface = node.hostname, port = node.port + 1)
+  private val acceptSocket = new ServerSocket(node.getCorePort, 50, InetAddress.getByName(node.hostname))
+  private val httpServer = Http().bindAndHandle(route, interface = node.hostname, port = node.getHTTPPort)
 
   override def run() {
     while (true)
@@ -53,9 +58,9 @@ class Core(val node: Node, logLocation: String) extends Runnable {
   }
 
 
-  def sendBody(address: Address, body: Body): Unit = {
+  def sendBody(virtualNode: VirtualNode, body: Body): Unit = {
     println(this.acceptSocket.toString + " Sending body " + body.path)
-    body.send(new Socket(address.host, address.port))
+    body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
   }
 }
 
