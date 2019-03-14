@@ -4,12 +4,14 @@ import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 import helper.socketHelper
 import invalidationlog.{Invalidation, InvalidationProcessor, Log}
 import clock.clock
+import controller.ReqFile
 
 import scala.collection.mutable
 
 case class Controller(node: Node) extends Thread("ControlThread") {
 
   var log = new Log(node.logLocation)
+  val locationTable = new mutable.HashMap[String, Socket]() //map(object id, peer)
   val processor = new InvalidationProcessor(log)
   val peerControllers = new mutable.HashMap[Int, Socket]()
 
@@ -31,8 +33,14 @@ case class Controller(node: Node) extends Thread("ControlThread") {
     }
   }
 
-  def requestBody(): Unit = {
+  def requestBody(objectId: String): Unit = {
+    if (locationTable.contains(objectId)) {
+      val fileRequest = ReqFile(node.id, objectId, locationTable(objectId))
 
+      //todo send the file request
+    } else {//Broadcast to neighbours
+
+    }
   }
 
   def connectToNodeController(virtualNode: VirtualNode): Unit = {
