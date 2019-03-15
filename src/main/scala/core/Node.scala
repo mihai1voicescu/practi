@@ -1,5 +1,7 @@
 package core
 
+import controller.ReqFile
+
 import scala.collection.mutable.ListBuffer
 
 class Node(port: Int, val root: String, hostname :String = "localhost", id : Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
@@ -28,6 +30,16 @@ class Node(port: Int, val root: String, hostname :String = "localhost", id : Int
   {
     for (n <- neighbours) {
      sendBody(n, body)
+    }
+  }
+
+  def sendFileRequest(n: VirtualNode, reqFile: ReqFile) = {
+    controller.sendFileRequest(n, reqFile)
+  }
+
+  def reqFileFromAllNeighbours(reqFile: ReqFile): Unit = {
+    for (n <- neighbours) {
+      sendFileRequest(n, reqFile)
     }
   }
 

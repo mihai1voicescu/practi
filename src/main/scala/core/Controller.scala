@@ -4,18 +4,24 @@ import java.io.{DataInputStream, IOException, ObjectInputStream, ObjectOutputStr
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 
 import clock.clock
+import controller.{ReqFile, ResLocation}
 import invalidationlog.{Invalidation, InvalidationProcessor, Log}
-import controller.ReqFile
 
 import scala.collection.mutable
 
 case class Controller(node: Node) extends Thread("ControlThread") {
 
+
   var log = new Log(node.logLocation)
   val processor = new InvalidationProcessor(log, this)
-  val locationTable = new mutable.HashMap[String, NodeLocation]() //map(object id, peer)
+  /**
+    * Table of (object id, peer) describing which peer should be asked next if looking for corresponding object
+    */
+  val locationTable = new mutable.HashMap[String, VirtualNode]() //map(object id, peer)
+  /**
+    *
+    */
   val peerControllers = new mutable.HashMap[Int, Socket]()
-
   private val acceptSocket = new ServerSocket(node.getControllerPort, 50, InetAddress.getByName(node.hostname))
   this.start()
 
@@ -36,11 +42,15 @@ case class Controller(node: Node) extends Thread("ControlThread") {
 
   def requestBody(objectId: String): Unit = {
     if (locationTable.contains(objectId)) {
-      val fileRequest = ReqFile(node.id, objectId, locationTable(objectId).)
-
-      //todo send the file request
-    } else {//Broadcast to neighbours
-
+      //It knows which neighbour to ask for the file
+      val fileRequest = ReqFile(node, node, objectId, locationTable(objectId), List(locationTable(objectId), node))
+      fileRequest.send()
+    } else {
+      //It does not know which neighbour to ask; broadcast to all neighbours
+      for (n <- node.neighbours) {
+        val fileRequest = ReqFile(node, node, objectId, n, List(n, node))
+        fileRequest.send()
+      }
     }
   }
 
@@ -85,16 +95,37 @@ case class Controller(node: Node) extends Thread("ControlThread") {
               processor.process(invalidation)
             }
             case reqFile: ReqFile =>
-              if (locationTable.contains(reqFile.objectId)) {
-                //Throw an exception, this should never happen
-              } else {
-                if (node.id == locationTable(reqFile.objectId).id) {
-                  //This means this node currently has the file
-                }
-              }
               //1. check if the file is on this node
               //2. send reqfile to other nodes if needed
               //3. send body if needed
+              if (!locationTable.contains(reqFile.objectId)) {
+                if (node.id == locationTable(reqFile.objectId).id) {
+                  //This means this node currently has the file
+                  node.sendBody(reqFile.originator, node.createBody(reqFile.objectId))
+                } else {
+                  //The node does not have the file but one of the neighbours may have it
+                  val fileRequest = ReqFile(reqFile.originator, node, reqFile.objectId, locationTable(reqFile.objectId),
+                    locationTable(reqFile.objectId) +: reqFile.path)
+                  fileRequest.send()
+                }
+              } else {
+                //Node does not know where the object is so ask all neighbours
+                for (n <- node.neighbours) {
+                  val fileRequest = ReqFile(reqFile.originator, node, reqFile.objectId, n, n +: reqFile.path)
+                  fileRequest.send()
+                }
+              }
+            case resLocation: ResLocation =>
+              //The node gets information about where to find a file
+              if (locationTable.contains(resLocation.objectId)) {
+                locationTable.update(resLocation.objectId, resLocation.path.head)
+              } else {
+                locationTable.put(resLocation.objectId, resLocation.path.head)
+              }
+              if (resLocation.path.tail.nonEmpty) {
+                val newResLocation = ResLocation(resLocation.objectId, resLocation.path.tail)
+                newResLocation.send()
+              }
           }
         }
         catch {

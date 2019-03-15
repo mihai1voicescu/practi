@@ -2,7 +2,7 @@ package core
 
 import java.net.Socket
 
-class VirtualNode(val id: Int, val hostname: String, val port: Int) {
+class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Serializable {
 
   var controllerSocket: Socket = null
 
