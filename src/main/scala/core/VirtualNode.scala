@@ -1,3 +1,5 @@
+package core
+
 import java.net.Socket
 
 class VirtualNode(val id: Int, val hostname: String, val port: Int) {

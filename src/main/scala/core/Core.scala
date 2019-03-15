@@ -1,19 +1,19 @@
+package core
+
 import java.io._
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
+import java.nio.file._
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 import akka.stream.ActorMaterializer
 import helper.fileHelper
+import invalidationlog.Log
 
 import scala.concurrent.ExecutionContextExecutor
-import invalidationlog.Log
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
-
-import akka.http.scaladsl.server.Directives._
-
-import java.nio.file._
-import akka.http.scaladsl.model.StatusCodes
 
 class Core(val node: Node, logLocation: String) extends Runnable {
 
@@ -71,11 +71,16 @@ case class ServerThread(socket: Socket, node: Node) extends Thread("ServerThread
       val in = new ObjectInputStream(ds)
 
 
-      val body = in.readObject().asInstanceOf[Body]
-      println(this.socket.toString + " Received body " + body.path)
+      in.readObject() match {
+        case body: Body => {
+          println(this.socket.toString + " Received body " + body.path)
 
-      body.bind(node)
-      body.receive(ds)
+          body.bind(node)
+          body.receive(ds)
+        }
+        case _ =>
+      }
+
     }
     catch {
       case e: SocketException =>

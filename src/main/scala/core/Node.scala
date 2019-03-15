@@ -1,4 +1,4 @@
-import java.net.{InetAddress, ServerSocket, Socket}
+package core
 
 import scala.collection.mutable.ListBuffer
 
@@ -37,4 +37,3 @@ class Node(port: Int, val root: String, hostname :String = "localhost", id : Int
 
   def createBody(filePath: String): Body = Body(root, filePath)
 }
-

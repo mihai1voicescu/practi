@@ -2,9 +2,10 @@ package controller
 
 import java.net.Socket
 
+import core.NodeLocation
 import helper.socketHelper
 
-case class ReqFile(requestNodeId: Int, objectId: String, @transient neighbour: Socket) extends Serializable {
+case class ReqFile(requestingNode: NodeLocation, objectId: String, receivingNode: NodeLocation, @transient neighbour: Socket) extends Serializable {
   def send(): Unit = {
     socketHelper.send(neighbour, this)
   }
