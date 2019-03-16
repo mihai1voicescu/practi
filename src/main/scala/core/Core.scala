@@ -59,7 +59,7 @@ class Core(val node: Node, logLocation: String) extends Runnable {
 
 
   def sendBody(virtualNode: VirtualNode, body: Body): Unit = {
-    println(this.acceptSocket.toString + " Sending body " + body.path)
+    println(node + " Sending body " + " to " + virtualNode + " for " + body.path)
     body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
   }
 }
@@ -70,10 +70,9 @@ case class ServerThread(socket: Socket, node: Node) extends Thread("ServerThread
       val ds = new DataInputStream(socket.getInputStream)
       val in = new ObjectInputStream(ds)
 
-
       in.readObject() match {
         case body: Body => {
-          println(this.socket.toString + " Received body " + body.path)
+          println(node + " Received body " + body.path)
 
           body.bind(node)
           body.receive(ds)

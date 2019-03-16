@@ -8,6 +8,7 @@ case class ReqFile(originator: VirtualNode, requestingNode: VirtualNode, objectI
   path = List(originator)
 
   def send(): Unit = {
+    println(requestingNode + " sending body request to " + receivingNode + " for " + objectId)
     socketHelper.send(receivingNode.getControllerSocket, this)
   }
 }

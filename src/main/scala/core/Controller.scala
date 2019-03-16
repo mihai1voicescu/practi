@@ -1,6 +1,6 @@
 package core
 
-import java.io.{DataInputStream, IOException, ObjectInputStream, ObjectOutputStream}
+import java.io._
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 
 import clock.clock
@@ -18,9 +18,6 @@ case class Controller(node: Node) extends Thread("ControlThread") {
     * Table of (object id, peer) describing which peer should be asked next if looking for corresponding object
     */
   val locationTable = new mutable.HashMap[String, VirtualNode]() //map(object id, peer)
-  /**
-    *
-    */
   val peerControllers = new mutable.HashMap[Int, Socket]()
   private val acceptSocket = new ServerSocket(node.getControllerPort, 50, InetAddress.getByName(node.hostname))
   this.start()
@@ -41,14 +38,17 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   }
 
   def requestBody(objectId: String): Unit = {
+    val currentVirtualNode = node.getVirtualNode()
     if (locationTable.contains(objectId)) {
       //It knows which neighbour to ask for the file
-      val fileRequest = ReqFile(node, node, objectId, locationTable(objectId), List(locationTable(objectId), node))
+      val fileRequest = ReqFile(currentVirtualNode, currentVirtualNode, objectId, locationTable(objectId),
+        List(locationTable(objectId), currentVirtualNode))
       fileRequest.send()
     } else {
       //It does not know which neighbour to ask; broadcast to all neighbours
       for (n <- node.neighbours) {
-        val fileRequest = ReqFile(node, node, objectId, n, List(n, node))
+        val fileRequest = ReqFile(currentVirtualNode, currentVirtualNode, objectId,
+          n, List(n, currentVirtualNode))
         fileRequest.send()
       }
     }
@@ -98,20 +98,26 @@ case class Controller(node: Node) extends Thread("ControlThread") {
               //1. check if the file is on this node
               //2. send reqfile to other nodes if needed
               //3. send body if needed
-              if (!locationTable.contains(reqFile.objectId)) {
+
+              //If the current node has the file but has not yet marked it in its table, do so now
+              if (node.hasBody(reqFile.objectId) && !locationTable.contains(reqFile.objectId)) {
+                locationTable.put(reqFile.objectId, node.getVirtualNode())
+              }
+              if (locationTable.contains(reqFile.objectId)) {
                 if (node.id == locationTable(reqFile.objectId).id) {
                   //This means this node currently has the file
                   node.sendBody(reqFile.originator, node.createBody(reqFile.objectId))
                 } else {
                   //The node does not have the file but one of the neighbours may have it
-                  val fileRequest = ReqFile(reqFile.originator, node, reqFile.objectId, locationTable(reqFile.objectId),
-                    locationTable(reqFile.objectId) +: reqFile.path)
+                  val fileRequest = ReqFile(reqFile.originator, node.getVirtualNode(), reqFile.objectId,
+                    locationTable(reqFile.objectId), locationTable(reqFile.objectId) +: reqFile.path)
                   fileRequest.send()
                 }
               } else {
                 //Node does not know where the object is so ask all neighbours
                 for (n <- node.neighbours) {
-                  val fileRequest = ReqFile(reqFile.originator, node, reqFile.objectId, n, n +: reqFile.path)
+                  val fileRequest = ReqFile(reqFile.originator, node.getVirtualNode(), reqFile.objectId, n,
+                    n +: reqFile.path)
                   fileRequest.send()
                 }
               }
@@ -126,13 +132,18 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                 val newResLocation = ResLocation(resLocation.objectId, resLocation.path.tail)
                 newResLocation.send()
               }
+            case _ =>
           }
+
+          in.close()
         }
         catch {
           case e: SocketException =>
             () // avoid stack trace when stopping a client with Ctrl-C
           case e: IOException =>
             e.printStackTrace();
+          case e: EOFException =>
+            e.printStackTrace()
         }
       }
     }

@@ -1,5 +1,8 @@
 package core
 
+import java.io.File
+import java.nio.file.{Files, Paths}
+
 import controller.ReqFile
 
 import scala.collection.mutable.ListBuffer
@@ -33,19 +36,18 @@ class Node(port: Int, val root: String, hostname :String = "localhost", id : Int
     }
   }
 
-  def sendFileRequest(n: VirtualNode, reqFile: ReqFile) = {
-    controller.sendFileRequest(n, reqFile)
-  }
-
-  def reqFileFromAllNeighbours(reqFile: ReqFile): Unit = {
-    for (n <- neighbours) {
-      sendFileRequest(n, reqFile)
-    }
-  }
-
   def sendBody(virtualNode: VirtualNode, body: Body): Unit = {
     core.sendBody(virtualNode, body)
   }
 
+  def hasBody(filePath: String): Boolean = {
+    val path = root + filePath
+    Files.exists(Paths.get(path))
+  }
+
   def createBody(filePath: String): Body = Body(root, filePath)
+
+  def getVirtualNode(): VirtualNode = {
+    new VirtualNode(id, hostname, port)
+  }
 }

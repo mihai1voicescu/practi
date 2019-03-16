@@ -4,7 +4,7 @@ import java.net.Socket
 
 class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Serializable {
 
-  var controllerSocket: Socket = null
+  @transient var controllerSocket: Socket = null
 
   def getControllerPort: Int = {
     port + 2
@@ -18,7 +18,7 @@ class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Seri
     port + 1
   }
 
-  def getControllerSocket: Socket = {
+  @transient def getControllerSocket: Socket = {
     if (controllerSocket == null) {
       controllerSocket = new Socket(hostname, getControllerPort)
       controllerSocket.setKeepAlive(true)
@@ -26,5 +26,9 @@ class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Seri
 
 
     controllerSocket
+  }
+
+  override def toString: String = {
+    this.id + "[" + hostname + ":" + port + "]"
   }
 }
