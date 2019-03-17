@@ -59,7 +59,7 @@ class Core(val node: Node, logLocation: String) extends Runnable {
 
 
   def sendBody(virtualNode: VirtualNode, body: Body): Unit = {
-    println(node + " Sending body " + " to " + virtualNode + " for " + body.path)
+    println(node + " Sending body to " + virtualNode + " for " + body.path)
     body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
   }
 }

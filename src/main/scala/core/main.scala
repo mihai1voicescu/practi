@@ -1,7 +1,5 @@
 package core
 
-import controller.ReqFile
-
 object main extends App {
   val node1 = new Node(9000, "./node-files/1/data/", "localhost", 1,"./node-files/1/log/log.txt")
   val node2 = new Node(9004, "./node-files/2/data/", "localhost", 2,"./node-files/2/log/log.txt")
@@ -10,6 +8,7 @@ object main extends App {
 
   node1.addNeighbour(node2.getVirtualNode())
   node2.addNeighbour(node3.getVirtualNode())
+  node2.addNeighbour(node1.getVirtualNode())
   node3.addNeighbour(node4.getVirtualNode())
 
   node1.controller.requestBody("very/deep/file.txt")
