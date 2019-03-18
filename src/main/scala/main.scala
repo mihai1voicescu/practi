@@ -1,4 +1,4 @@
-package core
+import core.Node
 
 object main extends App {
   val node1 = new Node(9000, "./node-files/1/data/", "localhost", 1,"./node-files/1/log/log.txt")
