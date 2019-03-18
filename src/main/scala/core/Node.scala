@@ -1,18 +1,27 @@
 package core
 
 import java.nio.file.{Files, Paths}
+import java.util.logging.{ConsoleHandler, Level, Logger}
 
 import invalidationlog.{Checkpoint, CheckpointItem}
 
 import scala.collection.mutable.ListBuffer
 
-class Node(port: Int, val root: String, hostname: String = "localhost", id: Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
+object Node {
+  private val LOGGER = Logger.getLogger(core.Node.getClass.getName)
+}
+
+class Node(port: Int, val root: String, hostname :String = "localhost", id : Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
   val core = new Core(this, logLocation)
   val controller = Controller(this)
   var neighbours: ListBuffer[VirtualNode] = ListBuffer()
   val checkpoint = new Checkpoint(List[CheckpointItem]())
 
   new Thread(core).start()
+
+  def logMessage(message: String, level:Level = null, logger: Logger = Node.LOGGER) : Unit = {
+    logger.log( if (level == null)  Level.INFO else level,s"[ID:$id][$hostname]\t$message")
+  }
 
   def addNeighbours(neighbours: List[VirtualNode]): Unit = {
     this.neighbours ++= neighbours
