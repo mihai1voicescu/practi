@@ -2,16 +2,25 @@ package core
 
 import java.io.File
 import java.nio.file.{Files, Paths}
+import java.util.logging.{ConsoleHandler, Level, Logger}
 
 import controller.ReqFile
 
 import scala.collection.mutable.ListBuffer
+
+object Node {
+  private val LOGGER = Logger.getLogger(core.Node.getClass.getName)
+}
 
 class Node(port: Int, val root: String, hostname :String = "localhost", id : Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
   val core = new Core(this, logLocation)
   new Thread(core).start()
   val controller = Controller(this)
   var neighbours: ListBuffer[VirtualNode] = ListBuffer()
+
+  def logMessage(message: String, level:Level = null, logger: Logger = Node.LOGGER) : Unit = {
+    logger.log( if (level == null)  Level.INFO else level,s"[ID:$id][$hostname]\t$message")
+  }
 
   def addNeighbours(neighbours: List[VirtualNode]): Unit = {
     this.neighbours ++= neighbours
