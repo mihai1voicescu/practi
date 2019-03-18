@@ -1,17 +1,18 @@
 package core
 
-import java.io.File
 import java.nio.file.{Files, Paths}
 
-import controller.ReqFile
+import invalidationlog.{Checkpoint, CheckpointItem}
 
 import scala.collection.mutable.ListBuffer
 
-class Node(port: Int, val root: String, hostname :String = "localhost", id : Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
+class Node(port: Int, val root: String, hostname: String = "localhost", id: Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
   val core = new Core(this, logLocation)
-  new Thread(core).start()
   val controller = Controller(this)
   var neighbours: ListBuffer[VirtualNode] = ListBuffer()
+  val checkpoint = new Checkpoint(List[CheckpointItem]())
+
+  new Thread(core).start()
 
   def addNeighbours(neighbours: List[VirtualNode]): Unit = {
     this.neighbours ++= neighbours
@@ -29,10 +30,9 @@ class Node(port: Int, val root: String, hostname :String = "localhost", id : Int
     controller.invalidate(objectId)
   }
 
-  def sendToAllNeighbours(body: Body): Unit =
-  {
+  def sendToAllNeighbours(body: Body): Unit = {
     for (n <- neighbours) {
-     sendBody(n, body)
+      sendBody(n, body)
     }
   }
 

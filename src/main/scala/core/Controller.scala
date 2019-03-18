@@ -5,7 +5,7 @@ import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 
 import clock.clock
 import controller.ReqFile
-import invalidationlog.{Invalidation, InvalidationProcessor, Log}
+import invalidationlog._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -15,8 +15,9 @@ case class Controller(node: Node) extends Thread("ControlThread") {
 
 
   var log = new Log(node.logLocation)
-  val processor = new InvalidationProcessor(log, this)
+  val processors = List[Processor](new InvalidationProcessor(this), new CheckpointProcessor(this))
   val processedRequests = new ListBuffer[Int]()
+
   /**
     * Table of (object id, peer) describing which peer should be asked next if looking for corresponding object
     */
@@ -121,6 +122,13 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                   }
                 }
               }
+
+            case invalidation: Invalidation => {
+              println(node + " Received invalidation with timestamp: " + invalidation.timestamp)
+
+              //process the invalidation
+              processors.foreach(p => p.process(invalidation))
+            }
             case _ =>
           }
 

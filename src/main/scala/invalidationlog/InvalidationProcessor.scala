@@ -6,10 +6,10 @@ import core.Controller
 /**
   * Class, that is responsible for invalidation processing
   *
-  * @param log instance to write.
+  * @param controller controller instance for accessing log, checkpoint and controller methods.
   */
 
-class InvalidationProcessor(log: Log, controller: Controller) {
+class InvalidationProcessor(controller: Controller) extends Processor {
   /**
     * Method, that contains invalidation processing logic
     *
@@ -19,13 +19,10 @@ class InvalidationProcessor(log: Log, controller: Controller) {
     clock.receiveStamp(invalidation);
 
     if (invalidation.timestamp > clock.time) {
-      log.insert(invalidation)
+      controller.log.insert(invalidation)
 
       //NOTE: this is not tested yet. Probably will change heavily.
       controller.sendInvalidationForAllNeighbours(invalidation)
     }
-
-    //TODO update checkpoint
-
   }
 }
