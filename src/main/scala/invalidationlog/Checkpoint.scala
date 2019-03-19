@@ -29,7 +29,7 @@ class Checkpoint(var items: mutable.HashMap[String, CheckpointItem]) {
     */
   def update(newItem: CheckpointItem): CheckpointItem = {
     items.contains(newItem.id) match {
-      case false => return null
+      case false => insert(newItem)
       case _ => {
         items.update(newItem.id, newItem)
         return newItem
@@ -37,6 +37,17 @@ class Checkpoint(var items: mutable.HashMap[String, CheckpointItem]) {
 
     }
 
+  }
+
+  /**
+    * Method that inserts item into checkpoint.
+    *
+    * @param item
+    * @return
+    */
+  private def insert(item: CheckpointItem): CheckpointItem = {
+    items += item.id -> item
+    return item
   }
 
 }
