@@ -10,13 +10,6 @@ case class ReqFile(originator: VirtualNode, requestingNode: VirtualNode, objectI
 
   def send(): Unit = {
     println(requestingNode + " sending body request to " + receivingNode + " for " + objectId)
-    val socket = receivingNode.getControllerSocket
-    val that = this
-    val thread = new Thread() {
-      override def run {
-        socketHelper.send(socket, that)
-      }
-    }
-    thread.start()
+    receivingNode.sendToControllerAsync(this)
   }
 }

@@ -15,7 +15,10 @@ import akka.stream.ActorMaterializer
 import helper.fileHelper
 import invalidationlog.Log
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.collection.mutable.ListBuffer
+import scala.collection.parallel.mutable
+import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
+import scala.util.{Failure, Success}
 
 object Core {
   private val LOGGER = Logger.getLogger(core.Core.getClass.getName)
@@ -26,19 +29,29 @@ class Core(val node: Node, logLocation: String) extends Runnable {
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  private val listeners = new mutable.ParHashMap[String, ListBuffer[Promise[Unit]]]().withDefault(_ => new ListBuffer[Promise[Unit]])
 
-  private val fallbackToRemoteNode = RejectionHandler.newBuilder()
-    .handleNotFound({
-      // TODO get the file from a remote node
-      complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>FILE NOT FOUND AND FALLBACK NOT IMPLEMENTED</h1>"))
-    })
-    .result()
 
   private val route =
 
     get {
-      handleRejections(fallbackToRemoteNode) {
-        path(Remaining) { name: String =>
+      path(Remaining) { name: String =>
+        handleRejections(RejectionHandler.newBuilder()
+          .handleNotFound({
+            node.controller.requestBody(name)
+
+
+            val p = Promise[Unit]()
+
+            listeners(name) += p
+
+            onComplete(p.future) {
+              case Success(_) => getFromFile(node.root + name)
+                // todo Failure is actually on top
+              case Failure(_) => complete(StatusCodes.NotFound)
+            }
+          })
+          .result()) {
           fileHelper.checkSandbox(name)
           getFromFile(node.root + name) // uses implicit ContentTypeResolver
         }
@@ -84,30 +97,33 @@ class Core(val node: Node, logLocation: String) extends Runnable {
     println(node + " Sending body to " + virtualNode + " for " + body.path)
     body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
   }
-}
 
-case class ServerThread(socket: Socket, node: Node) extends Thread("ServerThread") {
-  override def run(): Unit = {
-    try {
-      val ds = new DataInputStream(socket.getInputStream)
-      val in = new ObjectInputStream(ds)
+  case class ServerThread(socket: Socket, node: Node) extends Thread("ServerThread") {
+    override def run(): Unit = {
+      try {
+        val ds = new DataInputStream(socket.getInputStream)
+        val in = new ObjectInputStream(ds)
 
-      in.readObject() match {
-        case body: Body => {
-          println(node + " Received body " + body.path)
+        in.readObject() match {
+          case body: Body =>
+            println(node + " Received body " + body.path)
 
-          body.bind(node)
-          body.receive(ds)
+            body.bind(node)
+            body.receive(ds)
+            val l = listeners -= body.path
+            listeners.get(body.path).collect {
+              case list: ListBuffer[Promise[Unit]] => list.foreach(promise => promise.success())
+            }
+          case _ =>
         }
-        case _ =>
-      }
 
-    }
-    catch {
-      case e: SocketException =>
-        () // avoid stack trace when stopping a client with Ctrl-C
-      case e: IOException =>
-        e.printStackTrace();
+      }
+      catch {
+        case e: SocketException =>
+          () // avoid stack trace when stopping a client with Ctrl-C
+        case e: IOException =>
+          e.printStackTrace();
+      }
     }
   }
 

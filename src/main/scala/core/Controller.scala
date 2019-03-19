@@ -10,6 +10,7 @@ import invalidationlog._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.Future
 import scala.util.Random
 
 case class Controller(node: Node) extends Thread("ControlThread") {
@@ -23,7 +24,6 @@ case class Controller(node: Node) extends Thread("ControlThread") {
     * Table of (object id, peer) describing which peer should be asked next if looking for corresponding object
     */
   val locationTable = new mutable.HashMap[String, VirtualNode]() //map(object id, peer)
-  val peerControllers = new mutable.HashMap[Int, Socket]()
   private val acceptSocket = new ServerSocket(node.getControllerPort, 50, InetAddress.getByName(node.hostname))
   this.start()
   this.checkInvalidationsScheduled()
@@ -36,11 +36,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   def sendInvalidationForAllNeighbours(invalidation: Invalidation): Unit = {
     // stamp the operation
     invalidation.sendStamp()
-    peerControllers.foreach { case (_, socket)
-    =>
-      new ObjectOutputStream(socket.getOutputStream).writeObject(invalidation)
-      node.getControllerSocket.getOutputStream.flush()
-    }
+    node.neighbours.foreach(n => n.sendToControllerAsync(invalidation))
   }
 
   /**
@@ -73,7 +69,6 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   }
 
   def connectToNodeController(virtualNode: VirtualNode): Unit = {
-    peerControllers(virtualNode.id) = virtualNode.getControllerSocket
   }
 
   def invalidate(objectId: String): Unit = {

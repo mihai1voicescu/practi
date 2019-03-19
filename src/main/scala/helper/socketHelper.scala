@@ -28,8 +28,6 @@ object socketHelper {
       output.write(byteArray)
 
       output.flush()
-      output.close()
-      conn.close()
     }(ExecutionContext.global)
   }
 
@@ -56,9 +54,6 @@ object socketHelper {
         len = input.read(byteArray)
       }
       output.flush()
-      input.close()
-      output.close()
-      conn.close()
     }(ExecutionContext.global)
   }
 
