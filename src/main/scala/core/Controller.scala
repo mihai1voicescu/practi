@@ -2,9 +2,10 @@ package core
 
 import java.io._
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
+import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
 import clock.clock
-import controller.ReqFile
+import controller.{BodyRequestScheduler, ReqFile}
 import invalidationlog._
 
 import scala.collection.mutable
@@ -25,6 +26,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   val peerControllers = new mutable.HashMap[Int, Socket]()
   private val acceptSocket = new ServerSocket(node.getControllerPort, 50, InetAddress.getByName(node.hostname))
   this.start()
+  this.checkInvalidationsScheduled()
 
   /**
     * Controller method that is responsible for sending invalidations for all neighbors found in @node
@@ -39,6 +41,15 @@ case class Controller(node: Node) extends Thread("ControlThread") {
       new ObjectOutputStream(socket.getOutputStream).writeObject(invalidation)
       node.getControllerSocket.getOutputStream.flush()
     }
+  }
+
+  /**
+    * Check if there are any bodies invalid every x seconds.
+    */
+  def checkInvalidationsScheduled(): Unit = {
+    val ex = new ScheduledThreadPoolExecutor(1)
+    val task = new BodyRequestScheduler(node)
+    ex.scheduleAtFixedRate(task, 3, 3, TimeUnit.SECONDS)
   }
 
   def requestBody(objectId: String): Unit = {
