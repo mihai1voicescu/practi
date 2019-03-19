@@ -5,22 +5,23 @@ import java.util.logging.{ConsoleHandler, Level, Logger}
 
 import invalidationlog.{Checkpoint, CheckpointItem}
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object Node {
   private val LOGGER = Logger.getLogger(core.Node.getClass.getName)
 }
 
-class Node(port: Int, val root: String, hostname :String = "localhost", id : Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
+class Node(port: Int, val root: String, hostname: String = "localhost", id: Int, val logLocation: String) extends VirtualNode(id, hostname, port) {
   val core = new Core(this, logLocation)
   val controller = Controller(this)
   var neighbours: ListBuffer[VirtualNode] = ListBuffer()
-  val checkpoint = new Checkpoint(List[CheckpointItem]())
+  val checkpoint = new Checkpoint(mutable.HashMap[String, CheckpointItem]())
 
   new Thread(core).start()
 
-  def logMessage(message: String, level:Level = null, logger: Logger = Node.LOGGER) : Unit = {
-    logger.log( if (level == null)  Level.INFO else level,s"[ID:$id][$hostname]\t$message")
+  def logMessage(message: String, level: Level = null, logger: Logger = Node.LOGGER): Unit = {
+    logger.log(if (level == null) Level.INFO else level, s"[ID:$id][$hostname]\t$message")
   }
 
   def addNeighbours(neighbours: List[VirtualNode]): Unit = {

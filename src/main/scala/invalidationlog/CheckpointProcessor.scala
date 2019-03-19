@@ -1,6 +1,6 @@
 package invalidationlog
 
-import core.Controller
+import core.{Body, Controller}
 
 /**
   * Class that is responsible for processing invalidations in terms of checkpoint.
@@ -18,6 +18,45 @@ class CheckpointProcessor(controller: Controller) extends Processor {
   }
 
   /**
+    * Function that processes incoming body in terms of checkpoint.
+    *
+    * @param body
+    * @return
+    */
+  def processBody(body: Body): Unit = {
+    processBody(controller.node.checkpoint.getById(body.path), body)
+  }
+
+  /**
+    * Function that handles existing and non existing body entry in @Checkpoint and updates it with appropriate logic
+    *
+    * @param maybeItem
+    * @param newBod
+    * @return
+    */
+  private def processBody(maybeItem: Option[CheckpointItem], newBod: Body) = {
+    maybeItem match {
+      case Some(value) => processExistingBod(value, newBod)
+      case None =>
+    }
+  }
+
+  /**
+    * Function that updates the existing body entry in @Checkpoint . It contains all the update logic.
+    *
+    * @param value
+    * @param newBod
+    * @return
+    */
+  private def processExistingBod(value: CheckpointItem, newBod: Body) = {
+    if (newBod.timestamp <= value.timestamp) Unit
+
+    val newCheckpointItem = new CheckpointItem(newBod.path, newBod, false, newBod.timestamp)
+    controller.node.checkpoint.update(newCheckpointItem)
+  }
+
+
+  /**
     * Functional style function, that process null values.
     *
     * @param existingItem
@@ -25,7 +64,7 @@ class CheckpointProcessor(controller: Controller) extends Processor {
     */
   private def processInvalidation(existingItem: Option[CheckpointItem], inv: Invalidation): Unit = {
     existingItem match {
-      case Some(item) => processExisting(inv, item)
+      case Some(item) => processExistingInv(inv, item)
       case None => addNewItem(inv)
     }
   }
@@ -40,12 +79,12 @@ class CheckpointProcessor(controller: Controller) extends Processor {
     * @param inv  received invalidation
     * @param item existing checkpoint item
     */
-  private def processExisting(inv: Invalidation, item: CheckpointItem): Unit = {
+  private def processExistingInv(inv: Invalidation, item: CheckpointItem): Unit = {
     //  From the book "Note that checkpoint update for an incoming invalidation is skipped if the checkpoint entry already stores a logical time that is at least as high
     // as the logical time of the incoming invalidation."
     if (inv.timestamp <= item.timestamp) return
 
     val newItem = new CheckpointItem(item.id, item.body, true, inv.timestamp)
-    controller.node.checkpoint.items = controller.node.checkpoint.items.updated(controller.node.checkpoint.items.indexOf(item), newItem)
+    controller.node.checkpoint.update(newItem)
   }
 }
