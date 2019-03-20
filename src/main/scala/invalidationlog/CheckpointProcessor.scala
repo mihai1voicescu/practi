@@ -34,10 +34,9 @@ class CheckpointProcessor(controller: Controller) extends Processor {
     * @param newBod
     * @return
     */
-  private def processBody(maybeItem: Option[CheckpointItem], newBod: Body) = {
-    maybeItem match {
-      case Some(value) => processExistingBod(value, newBod)
-      case None =>
+  private def processBody(maybeItem: CheckpointItem, newBod: Body) = {
+    if (maybeItem.isInstanceOf[CheckpointItem]) {
+      processExistingBod(maybeItem, newBod)
     }
   }
 
@@ -62,10 +61,11 @@ class CheckpointProcessor(controller: Controller) extends Processor {
     * @param existingItem
     * @param inv
     */
-  private def processInvalidation(existingItem: Option[CheckpointItem], inv: Invalidation): Unit = {
-    existingItem match {
-      case Some(item) => processExistingInv(inv, item)
-      case None => addNewItem(inv)
+  private def processInvalidation(existingItem: CheckpointItem, inv: Invalidation): Unit = {
+    if (existingItem.isInstanceOf[CheckpointItem]) {
+      processExistingInv(inv, existingItem)
+    } else {
+      addNewItem(inv)
     }
   }
 

@@ -7,17 +7,17 @@ import java.util.logging.{Level, Logger}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{MethodRejection, RejectionHandler, Route}
+import akka.http.scaladsl.server.RejectionHandler
 import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 import akka.stream.ActorMaterializer
 import helper.fileHelper
-import invalidationlog.Log
+import invalidationlog.{CheckpointItem, Log}
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.mutable
-import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
+import scala.concurrent.{ExecutionContextExecutor, Promise}
 import scala.util.{Failure, Success}
 
 object Core {
@@ -47,7 +47,7 @@ class Core(val node: Node, logLocation: String) extends Runnable {
 
             onComplete(p.future) {
               case Success(_) => getFromFile(node.root + name)
-                // todo Failure is actually on top
+              // todo Failure is actually on top
               case Failure(_) => complete(StatusCodes.NotFound)
             }
           })
@@ -93,8 +93,15 @@ class Core(val node: Node, logLocation: String) extends Runnable {
   }
 
   def sendBody(virtualNode: VirtualNode, body: Body): Unit = {
-    println(node + " Sending body to " + virtualNode + " for " + body.path)
-    body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
+    val a = node.checkpoint.getById(body.path)
+    if (a.isInstanceOf[CheckpointItem]) {
+      if (a.invalid) {
+        println(node + " not sending body " + body.path + " to " + virtualNode + " as it is invalid")
+      } else {
+        println(node + " Sending body to " + virtualNode + " for " + body.path)
+        body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
+      }
+    }
   }
 
   case class ServerThread(socket: Socket, node: Node) extends Thread("ServerThread") {

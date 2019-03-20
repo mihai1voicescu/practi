@@ -15,11 +15,8 @@ class Checkpoint(var items: mutable.HashMap[String, CheckpointItem]) {
     * @param objId
     * @return
     */
-  def getById(objId: String): Option[CheckpointItem] = {
-    items.contains(objId) match {
-      case true => Some(items(objId))
-      case _ => None
-    }
+  def getById(objId: String): CheckpointItem = {
+    items(objId)
   }
 
   /**
