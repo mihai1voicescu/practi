@@ -5,12 +5,12 @@ import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
 import clock.clock
-import controller.{BodyRequestScheduler, ReqFile}
+import controller.{BodyRequestScheduler, ReqFile, ResLocation}
 import invalidationlog._
+import scalaj.http.Http
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.Future
 import scala.util.Random
 
 case class Controller(node: Node) extends Thread("ControlThread") {
@@ -19,6 +19,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   var log = new Log(node.logLocation)
   val processors = List[Processor](new InvalidationProcessor(this), new CheckpointProcessor(this))
   val processedRequests = new ListBuffer[Int]()
+  val processedResponses = new ListBuffer[Int]()
 
   /**
     * Table of (object id, peer) describing which peer should be asked next if looking for corresponding object
@@ -100,33 +101,34 @@ case class Controller(node: Node) extends Thread("ControlThread") {
           // block until invalidations actually come
           in.readObject() match {
             case reqFile: ReqFile =>
-
-              //If the current node has the file but has not yet marked it in its table, do so now
-              if (node.hasBody(reqFile.objectId) && !locationTable.contains(reqFile.objectId)) {
-                locationTable.put(reqFile.objectId, node.getVirtualNode())
-              }
               //If the request is already processed by this node do not do it again
               if (!processedRequests.contains(reqFile.requestId)) {
                 processedRequests += reqFile.requestId
 
-                if (locationTable.contains(reqFile.objectId)) {
-                  if (node.id == locationTable(reqFile.objectId).id) {
-                    //This means this node currently has the file
-                    node.sendBody(reqFile.originator, node.createBody(reqFile.objectId))
-                  } else {
+                //If the current node has the file but has not yet marked it in its table, do so now
+                if (node.hasBody(reqFile.objectId)) {
+                  if (!locationTable.contains(reqFile.objectId)) {
+                    locationTable.put(reqFile.objectId, node.getVirtualNode())
+                  }
+                  val locationResponse = ResLocation(reqFile.objectId, reqFile.path, node.getVirtualNode(), reqFile.requestId)
+                  locationResponse.send()
+                } else {
+                  //Current node does not have the file; ask neighbour(s)
+                  if (locationTable.contains(reqFile.objectId)) {
                     //The node does not have the file but one of the neighbours may have it
                     val fileRequest = ReqFile(reqFile.originator, node.getVirtualNode(), reqFile.objectId,
                       locationTable(reqFile.objectId), locationTable(reqFile.objectId) +: reqFile.path, reqFile.requestId)
                     fileRequest.send()
-                  }
-                } else {
-                  //Node does not know where the object is so ask all neighbours
-                  for (n <- node.neighbours) {
-                    val fileRequest = ReqFile(reqFile.originator, node.getVirtualNode(), reqFile.objectId, n,
-                      n +: reqFile.path, reqFile.requestId)
-                    fileRequest.send()
+                  } else {
+                    //Node does not know where the object is so ask all neighbours
+                    for (n <- node.neighbours) {
+                      val fileRequest = ReqFile(reqFile.originator, node.getVirtualNode(), reqFile.objectId, n,
+                        n +: reqFile.path, reqFile.requestId)
+                      fileRequest.send()
+                    }
                   }
                 }
+
               }
 
             case invalidation: Invalidation => {
@@ -135,57 +137,33 @@ case class Controller(node: Node) extends Thread("ControlThread") {
               //process the invalidation
               processors.foreach(p => p.process(invalidation))
             }
+            case resLocation: ResLocation => {
+              if (!processedResponses.contains(resLocation.requestId)) {
+                processedResponses += resLocation.requestId
+                //The node gets information about where to find a file
+                //Never update the location, use the first location only as this is most likely the fastest path to use
+                // for requests in the future
+                if (!locationTable.contains(resLocation.objectId)) {
+                  locationTable.put(resLocation.objectId, resLocation.path.head)
+                }
+                if (resLocation.path.tail.nonEmpty) {
+                  val newResLocation = ResLocation(resLocation.objectId, resLocation.path.tail, resLocation.originator, resLocation.requestId)
+                  newResLocation.send()
+                } else {
+                  //The node is the one originally asking for the body; so send an HTTP request to the correct location
+                  // to actually obtain it
+                  val host = resLocation.originator.hostname
+                  val port = resLocation.originator.getHTTPPort
+                  //TODO make this async and store as a tmp file
+                  val body = Http("http://" + host + ":" + port + "/" + resLocation.objectId).asString.body
+                  println(node.getVirtualNode() + " Received body: " + body)
+                }
+              }
+            }
             case _ =>
           }
 
           in.close()
-          //            obj match {
-          //              case invalidation: Invalidation => {
-          //                println(node + " Received invalidation with timestamp: " + invalidation.timestamp)
-          //
-          //                //process the invalidation
-          //                processor.process(invalidation)
-          //              }
-          //              case reqFile: ReqFile =>
-          //                //1. check if the file is on this node
-          //                //2. send reqfile to other nodes if needed
-          //                //3. send body if needed
-          //
-          //                //If the current node has the file but has not yet marked it in its table, do so now
-          //                if (node.hasBody(reqFile.objectId) && !locationTable.contains(reqFile.objectId)) {
-          //                  locationTable.put(reqFile.objectId, node.getVirtualNode())
-          //                }
-          //                if (locationTable.contains(reqFile.objectId)) {
-          //                  if (node.id == locationTable(reqFile.objectId).id) {
-          //                    //This means this node currently has the file
-          //                    node.sendBody(reqFile.originator, node.createBody(reqFile.objectId))
-          //                  } else {
-          //                    //The node does not have the file but one of the neighbours may have it
-          //                    val fileRequest = ReqFile(reqFile.originator, node.getVirtualNode(), reqFile.objectId,
-          //                      locationTable(reqFile.objectId), locationTable(reqFile.objectId) +: reqFile.path)
-          //                    fileRequest.send()
-          //                  }
-          //                } else {
-          //                  //Node does not know where the object is so ask all neighbours
-          //                  for (n <- node.neighbours) {
-          //                    val fileRequest = ReqFile(reqFile.originator, node.getVirtualNode(), reqFile.objectId, n,
-          //                      n +: reqFile.path)
-          //                    fileRequest.send()
-          //                  }
-          //                }
-          //              case resLocation: ResLocation =>
-          //                //The node gets information about where to find a file
-          //                //Never update the location, use the first location only as this is most likely the fastest path to use
-          //                // for requests in the future
-          //                if (!locationTable.contains(resLocation.objectId)) {
-          //                  locationTable.put(resLocation.objectId, resLocation.path.head)
-          //                }
-          //                if (resLocation.path.tail.nonEmpty) {
-          //                  val newResLocation = ResLocation(resLocation.objectId, resLocation.path.tail)
-          //                  newResLocation.send()
-          //                }
-          //            }
-          //          }
         }
         catch {
           case e: SocketException =>

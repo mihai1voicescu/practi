@@ -6,10 +6,9 @@ object main extends App {
   val node3 = new Node(9030, "./node-files/3/data/", "localhost", 3,"./node-files/3/log/log.txt")
   val node4 = new Node(9040, "./node-files/4/data/", "localhost", 4,"./node-files/4/log/log.txt")
 
-  node1.addNeighbour(node2.getVirtualNode())
-  node2.addNeighbour(node3.getVirtualNode())
-  node2.addNeighbour(node1.getVirtualNode())
-  node3.addNeighbour(node4.getVirtualNode())
+  node1.addNeighbour(node3.getVirtualNode())
+  node1.addNeighbour(node4.getVirtualNode())
+//  node3.addNeighbour(node4.getVirtualNode())
 
   node1.controller.requestBody("very/deep/file.txt")
 }
