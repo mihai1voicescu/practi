@@ -67,6 +67,7 @@ class Node(port: Int, val root: String, hostname: String = "localhost", id: Int,
       case Some(checkpointItem) => {
         return !checkpointItem.invalid
       }
+      case _ => return false
     }
     false
   }
@@ -90,7 +91,7 @@ class Node(port: Int, val root: String, hostname: String = "localhost", id: Int,
         case Some(bodyId) => {
           // Create and insert body to checkpoint
           val bod = createBody(bodyId)
-          val chkIt = new CheckpointItem(f.getPath, bod, false, clock.clock.time)
+          val chkIt = new CheckpointItem(bod.path, bod, false, clock.clock.time)
           checkpoint.update(chkIt)
         }
         case None => throw new InvalidArgumentException(Array("Could not extract file id from File path"))

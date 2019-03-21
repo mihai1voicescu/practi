@@ -130,7 +130,6 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                 }
 
               }
-
             case invalidation: Invalidation => {
               println(node + " Received invalidation with timestamp: " + invalidation.timestamp)
 
