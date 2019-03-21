@@ -80,8 +80,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   }
 
   override def run(): Unit = {
-    while (true)
-      InvalidationThread(acceptSocket.accept()).start()
+    InvalidationThread(acceptSocket.accept()).start()
   }
 
   /**
