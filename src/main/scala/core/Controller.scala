@@ -24,7 +24,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   /**
     * Table of (object id, peer) describing which peer should be asked next if looking for corresponding object
     */
-  val locationTable = new mutable.HashMap[String, VirtualNode]() //map(object id, peer)
+  val locationTable = new mutable.HashMap[String, mutable.Queue[VirtualNode]]() //map(object id, peer)
   private val acceptSocket = new ServerSocket(node.getControllerPort, 50, InetAddress.getByName(node.hostname))
   this.start()
   this.checkInvalidationsScheduled()
@@ -54,8 +54,9 @@ case class Controller(node: Node) extends Thread("ControlThread") {
     val requestId = new Random().nextInt()
     if (locationTable.contains(objectId)) {
       //It knows which neighbour to ask for the file
-      val fileRequest = ReqFile(currentVirtualNode, currentVirtualNode, objectId, locationTable(objectId),
-        List(locationTable(objectId), currentVirtualNode), requestId)
+      val frontNode = locationTable(objectId).front
+      val fileRequest = ReqFile(currentVirtualNode, currentVirtualNode, objectId, frontNode,
+        List(frontNode, currentVirtualNode), requestId)
       processedRequests += requestId
       fileRequest.send()
     } else {
@@ -108,16 +109,19 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                 //If the current node has the file but has not yet marked it in its table, do so now
                 if (node.hasValidBody(reqFile.objectId)) {
                   if (!locationTable.contains(reqFile.objectId)) {
-                    locationTable.put(reqFile.objectId, node.getVirtualNode())
+                    val nodeQueue = mutable.Queue[VirtualNode]()
+                    nodeQueue.enqueue(node.getVirtualNode())
+                    locationTable.put(reqFile.objectId, nodeQueue)
                   }
                   val locationResponse = ResLocation(reqFile.objectId, reqFile.path, node.getVirtualNode(), reqFile.requestId)
                   locationResponse.send()
                 } else {
                   //Current node does not have the file; ask neighbour(s)
                   if (locationTable.contains(reqFile.objectId)) {
+                    val frontNode = locationTable(reqFile.objectId).front
                     //The node does not have the file but one of the neighbours may have it
                     val fileRequest = ReqFile(reqFile.originator, node.getVirtualNode(), reqFile.objectId,
-                      locationTable(reqFile.objectId), locationTable(reqFile.objectId) +: reqFile.path, reqFile.requestId)
+                      frontNode, frontNode +: reqFile.path, reqFile.requestId)
                     fileRequest.send()
                   } else {
                     //Node does not know where the object is so ask all neighbours
@@ -143,7 +147,13 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                 //Never update the location, use the first location only as this is most likely the fastest path to use
                 // for requests in the future
                 if (!locationTable.contains(resLocation.objectId)) {
-                  locationTable.put(resLocation.objectId, resLocation.path.head)
+                  val nodeQueue = mutable.Queue[VirtualNode]()
+                  nodeQueue.enqueue(node.getVirtualNode())
+                  locationTable.put(resLocation.objectId, nodeQueue)
+                } else if (!locationTable(resLocation.objectId).contains(node.getVirtualNode())) {
+                  // theres a new location for a already known file
+                  // so that location will be added to the queue
+                  locationTable(resLocation.objectId).enqueue(node.getVirtualNode())
                 }
                 if (resLocation.path.tail.nonEmpty) {
                   val newResLocation = ResLocation(resLocation.objectId, resLocation.path.tail, resLocation.originator, resLocation.requestId)
