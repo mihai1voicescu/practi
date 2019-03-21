@@ -16,7 +16,7 @@ import scala.util.Random
 case class Controller(node: Node) extends Thread("ControlThread") {
 
 
-  var log = new Log(node.logLocation)
+  var log = new Log(node.logDir + "log.txt")
   val processors = List[Processor](new InvalidationProcessor(this), new CheckpointProcessor(this))
   val processedRequests = new ListBuffer[Int]()
   val processedResponses = new ListBuffer[Int]()

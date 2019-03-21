@@ -3,10 +3,7 @@ import java.io._
 
 class Log(filepath: String) {
   val file = new File(filepath)
-  if (!file.exists()) {
-    file.getParentFile.mkdirs()
-    file.createNewFile()
-  }
+
 
   def insert(update: Update): Unit = {
     val fileOutputStream = new FileOutputStream(this.file)

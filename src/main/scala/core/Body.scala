@@ -15,7 +15,7 @@ case class Body(@transient var directory: String, path: String) extends Serializ
   import java.io.FileInputStream
 
   def bind(node: Node): Unit = {
-    directory = node.root
+    directory = node.dataDir
   }
 
   def send(conn: Socket, withStamp :Boolean = true): Unit = {

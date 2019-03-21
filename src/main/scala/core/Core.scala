@@ -46,14 +46,14 @@ class Core(val node: Node, logLocation: String) extends Runnable {
             listeners(name) += p
 
             onComplete(p.future) {
-              case Success(_) => getFromFile(node.root + name)
+              case Success(_) => getFromFile(node.dataDir + name)
               // todo Failure is actually on top
               case Failure(_) => complete(StatusCodes.NotFound)
             }
           })
           .result()) {
           fileHelper.checkSandbox(name)
-          getFromFile(node.root + name) // uses implicit ContentTypeResolver
+          getFromFile(node.dataDir + name) // uses implicit ContentTypeResolver
         }
       }
     } ~ withSizeLimit(200 * 1024 * 1024) {
@@ -65,7 +65,7 @@ class Core(val node: Node, logLocation: String) extends Runnable {
               val objectId = name + "/" + meta.getFileName
               fileHelper.checkSandbox(objectId)
 
-              Files.move(file.toPath, Paths.get(node.root + objectId), StandardCopyOption.REPLACE_EXISTING)
+              Files.move(file.toPath, Paths.get(node.dataDir + objectId), StandardCopyOption.REPLACE_EXISTING)
               node.invalidate(objectId)
 
               complete(StatusCodes.OK)
