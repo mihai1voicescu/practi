@@ -13,7 +13,7 @@ import akka.http.scaladsl.server.RejectionHandler
 import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 import akka.stream.ActorMaterializer
 import helper.fileHelper
-import invalidationlog.{CheckpointItem, Log}
+import invalidationlog.Log
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.mutable
@@ -88,47 +88,48 @@ class Core(val node: Node, logLocation: String) extends Runnable {
   }
 
   override def run() {
-    while (true)
-      ServerThread(acceptSocket.accept(), node).start()
+    ServerThread(acceptSocket.accept(), node).start()
   }
 
   def sendBody(virtualNode: VirtualNode, body: Body): Unit = {
     val a = node.checkpoint.getById(body.path)
-    if (a.isInstanceOf[CheckpointItem]) {
-      if (a.invalid) {
-        println(node + " not sending body " + body.path + " to " + virtualNode + " as it is invalid")
-      } else {
-        println(node + " Sending body to " + virtualNode + " for " + body.path)
-        body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
-      }
+    a match {
+      case Some(checkpointItem) =>
+        if (checkpointItem.invalid) {
+          println(node + " not sending body " + body.path + " to " + virtualNode + " as it is invalid")
+        } else {
+          println(node + " Sending body to " + virtualNode + " for " + body.path)
+          body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
+        }
     }
   }
 
   case class ServerThread(socket: Socket, node: Node) extends Thread("ServerThread") {
     override def run(): Unit = {
-      try {
-        val ds = new DataInputStream(socket.getInputStream)
-        val in = new ObjectInputStream(ds)
+      val ds = new DataInputStream(socket.getInputStream)
+      val in = new ObjectInputStream(ds)
 
-        in.readObject() match {
-          case body: Body =>
-            println(node + " Received body " + body.path)
+      while (true) {
+        try {
 
-            body.bind(node)
-            body.receive(ds)
-            val l = listeners -= body.path
-            listeners.get(body.path).collect {
-              case list: ListBuffer[Promise[Unit]] => list.foreach(promise => promise.success())
-            }
-          case _ =>
+          in.readObject() match {
+            case body: Body =>
+              println(node + " Received body " + body.path)
+
+              body.bind(node)
+              body.receive(ds)
+              val l = listeners -= body.path
+              listeners.get(body.path).collect {
+                case list: ListBuffer[Promise[Unit]] => list.foreach(promise => promise.success())
+              }
+            case _ =>
+          }
+        } catch {
+          case e: SocketException =>
+            () // avoid stack trace when stopping a client with Ctrl-C
+          case e: IOException =>
+            e.printStackTrace();
         }
-
-      }
-      catch {
-        case e: SocketException =>
-          () // avoid stack trace when stopping a client with Ctrl-C
-        case e: IOException =>
-          e.printStackTrace();
       }
     }
   }

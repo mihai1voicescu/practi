@@ -61,6 +61,16 @@ class Node(port: Int, val root: String, hostname: String = "localhost", id: Int,
     Files.exists(Paths.get(path))
   }
 
+  def hasValidBody(filePath: String): Boolean = {
+    val a = this.checkpoint.getById(filePath)
+    a match {
+      case Some(checkpointItem) => {
+        return !checkpointItem.invalid
+      }
+    }
+    false
+  }
+
   def createBody(filePath: String): Body = Body(root, filePath)
 
   def getVirtualNode(): VirtualNode = {

@@ -94,10 +94,10 @@ case class Controller(node: Node) extends Thread("ControlThread") {
       // controllers need to be continuously connected to each other awaiting invalidations
       val ds = new DataInputStream(socket.getInputStream)
       // reset the Object input stream each time
-      while (true) {
+      val in = new ObjectInputStream(ds)
 
+      while (true) {
         try {
-          val in = new ObjectInputStream(ds)
           // block until invalidations actually come
           in.readObject() match {
             case reqFile: ReqFile =>
@@ -106,7 +106,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                 processedRequests += reqFile.requestId
 
                 //If the current node has the file but has not yet marked it in its table, do so now
-                if (node.hasBody(reqFile.objectId)) {
+                if (node.hasValidBody(reqFile.objectId)) {
                   if (!locationTable.contains(reqFile.objectId)) {
                     locationTable.put(reqFile.objectId, node.getVirtualNode())
                   }
