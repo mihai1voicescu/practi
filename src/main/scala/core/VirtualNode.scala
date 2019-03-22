@@ -1,6 +1,6 @@
 package core
 
-import java.io.ObjectOutputStream
+import java.io.{IOException, ObjectOutputStream, OutputStream}
 import java.net.Socket
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -8,6 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Serializable {
 
   @transient var controllerSocket: Socket = null
+  @transient var outputStream: ObjectOutputStream = null
 
   def getControllerPort: Int = {
     port + 2
@@ -31,17 +32,31 @@ class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Seri
     controllerSocket
   }
 
+  @transient def sendToCore(objectToSend: Object): Unit = {
+    val coreSocket = new Socket(hostname, getCorePort)
+    val outputStream = new ObjectOutputStream(coreSocket.getOutputStream)
+
+    outputStream.writeObject(objectToSend)
+    coreSocket.close()
+  }
+
+  @transient def sendToCoreAsync(objectToSend: Object): Unit = {
+    Future {
+      sendToCore(objectToSend)
+    }(ExecutionContext.global)
+  }
+
   @transient def sendToController(objectToSend: Object): Unit = {
     this.synchronized {
-      if (controllerSocket == null) {
+      if (outputStream == null) {
         controllerSocket = new Socket(hostname, getControllerPort)
         controllerSocket.setKeepAlive(true)
+        val output = controllerSocket.getOutputStream
+        outputStream = new ObjectOutputStream(output)
       }
 
-      val output = controllerSocket.getOutputStream
-      new ObjectOutputStream(output).writeObject(objectToSend)
-
-      output.flush()
+      outputStream.writeObject(objectToSend)
+      outputStream.flush()
     }
   }
 

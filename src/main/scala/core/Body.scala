@@ -6,6 +6,7 @@ import java.nio.file.{Files, Paths}
 
 import clock.ClockInfluencer
 import helper.fileHelper
+import invalidationlog.Checkpoint
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -30,29 +31,31 @@ case class Body(@transient var directory: String, path: String) extends Serializ
       sendStamp()
 
     Future {
-      var len = input.read(byteArray)
-      while (len != -1) {
-        output.write(byteArray, 0, len)
-        len = input.read(byteArray)
+      try {
+        var len = input.read(byteArray)
+        while (len != -1) {
+          output.write(byteArray, 0, len)
+          len = input.read(byteArray)
+        }
+        output.flush()
+        input.close()
+        output.close()
+        conn.close()
+      } catch {
+        case e :Exception =>
+          e.printStackTrace()
       }
-      output.flush()
-      input.close()
-      output.close()
-      conn.close()
     }(ExecutionContext.global)
   }
 
-  def receive(ds: InputStream): Unit = {
+  def receive(ds: InputStream, checkpoint: Checkpoint): Future[Unit] = {
     fileHelper.checkSandbox(path)
 
     val filePath = directory + path
     // If the path does not exist yet, create the necessary parent folders
-    if (!Files.exists(Paths.get(filePath))) {
-      val file = new File(new File(filePath).getParent)
-      file.mkdirs()
-    }
 
-    val output = new FileOutputStream(directory + path)
+    val tmpFile = File.createTempFile(path, ".tmp")
+    val output = new FileOutputStream(tmpFile)
     val input = new BufferedInputStream(ds)
 
     val byteArray = new Array[Byte](4 * 1024)
@@ -60,11 +63,22 @@ case class Body(@transient var directory: String, path: String) extends Serializ
     receiveStamp()
 
     Future {
-      var len = input.read(byteArray)
-      while (len != -1) {
-        output.write(byteArray, 0, len)
-        len = input.read(byteArray)
+      try {
+        var len = input.read(byteArray)
+        while (len != -1) {
+
+          output.write(byteArray, 0, len)
+
+          len = input.read(byteArray)
+
+        }
+      } catch {
+        case e : Exception=>
+          e.printStackTrace()
       }
+
+      checkpoint.swapFileByVersion(this, tmpFile)
+
       input.close()
       output.close()
     }(ExecutionContext.global)

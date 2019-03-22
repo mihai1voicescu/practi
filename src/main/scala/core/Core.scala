@@ -12,6 +12,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RejectionHandler
 import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 import akka.stream.ActorMaterializer
+import controller.ReqBody
 import helper.fileHelper
 import invalidationlog.Log
 
@@ -29,7 +30,7 @@ class Core(val node: Node) extends Runnable {
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
-  private val listeners = new mutable.ParHashMap[String, ListBuffer[Promise[Unit]]]().withDefault(_ => new ListBuffer[Promise[Unit]])
+  private val listeners = new mutable.ParHashMap[String, ListBuffer[Promise[Unit]]]()
 
 
   private val route =
@@ -42,11 +43,18 @@ class Core(val node: Node) extends Runnable {
 
 
             val p = Promise[Unit]()
+            listeners.get(name) match {
+              case None =>
+                val l = ListBuffer[Promise[Unit]]()
+                listeners.+=(name -> l)
+                l += p
+              case Some(r) => r += p
+            }
 
-            listeners(name) += p
 
             onComplete(p.future) {
-              case Success(_) => getFromFile(node.dataDir + name)
+              case Success(_) => println("COMPLETED")
+                getFromFile(node.dataDir + name)
               // todo Failure is actually on top
               case Failure(_) => complete(StatusCodes.NotFound)
             }
@@ -64,6 +72,12 @@ class Core(val node: Node) extends Runnable {
             case (meta, file) =>
               val objectId = name + "/" + meta.getFileName
               fileHelper.checkSandbox(objectId)
+
+              val dest = new File(node.dataDir + objectId)
+
+              if (!dest.exists()) {
+                dest.getParentFile.mkdirs()
+              }
 
               Files.move(file.toPath, Paths.get(node.dataDir + objectId), StandardCopyOption.REPLACE_EXISTING)
               node.invalidate(objectId)
@@ -103,12 +117,21 @@ class Core(val node: Node) extends Runnable {
         case body: Body =>
           println(node + " Received body " + body.path)
 
-          body.bind(node)
-          body.receive(ds)
-          val l = listeners -= body.path
-          listeners.get(body.path).collect {
-            case list: ListBuffer[Promise[Unit]] => list.foreach(promise => promise.success())
+          if (node.checkpoint.isNewer(body)) {
+            body.bind(node)
+            body.receive(ds, node.checkpoint) .onComplete(_ => {
+              listeners.remove( body.path) match {
+                case Some(l) => l.foreach(_.success())
+                case None =>
+              }
+            })
+          }else {
+            println("BODY IS OLD")
           }
+
+        case reqBody: ReqBody =>
+          reqBody.body.bind(this.node)
+          sendBody(reqBody.virtualNode, reqBody.body)
         case _ =>
       }
     } catch {
@@ -116,10 +139,6 @@ class Core(val node: Node) extends Runnable {
         e.printStackTrace();
       case e: IOException =>
         e.printStackTrace();
-    } finally {
-      ds.close()
-      in.close()
-      socket.close()
     }
 
   }

@@ -3,10 +3,12 @@ package invalidationlog
 import java.io.{IOException, _}
 import java.util.logging.{Level, Logger}
 
-import core.glob
+import core.{Body, glob}
 import helper.CheckpointSeeder
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.Promise
 
 object Checkpoint {
   private val LOGGER = Logger.getLogger(Checkpoint.getClass.getName)
@@ -52,6 +54,19 @@ class Checkpoint(dir: String) extends Serializable {
     }
   }
 
+  def isNewer(body: Body): Boolean = {
+    getById(body.path) match {
+      case Some(value) =>
+        if (value.timestamp < body.timestamp) {
+          return true
+        }
+      case None => return true
+
+    }
+
+    false
+  }
+
   /**
     * Updates the existing item in the buffer.
     *
@@ -63,6 +78,33 @@ class Checkpoint(dir: String) extends Serializable {
       case _ => {
         items.update(newItem.id, newItem)
         return newItem
+      }
+    }
+  }
+
+  def swapFileByVersion(body: Body, newFile: File): Unit = {
+    this.synchronized {
+
+      if (isNewer(body)) {
+
+        val file = new File(body.directory + "/" +  body.path)
+
+
+        if (!file.exists()) {
+          try {
+            val dir = file.getParentFile
+            dir.mkdirs()
+          } catch {
+            case e :Exception =>
+              e.printStackTrace()
+          }
+        }
+
+
+        newFile.renameTo(file)
+
+        update(new CheckpointItem(body.path, body, false, body.timestamp))
+
       }
     }
   }
@@ -108,7 +150,7 @@ class Checkpoint(dir: String) extends Serializable {
       return inst.items
     } catch {
       case e: Exception => {
-        logMessage("Error while reading checkpoint from file", Level.SEVERE)
+        logMessage(s"Error while reading ${dir + name} checkpoint from file", Level.SEVERE)
         return new mutable.HashMap[String, CheckpointItem]()
       }
     }

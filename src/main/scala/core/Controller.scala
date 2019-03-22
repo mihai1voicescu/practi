@@ -98,8 +98,10 @@ case class Controller(node: Node) extends Thread("ControlThread") {
 
       try {
         while (true) {
+
           // block until invalidations actually come
-          in.readObject() match {
+          val o = in.readObject()
+          o match {
             case reqFile: ReqFile =>
               //If the request is already processed by this node do not do it again
               if (!processedRequests.contains(reqFile.requestId)) {
@@ -160,11 +162,9 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                 } else {
                   //The node is the one originally asking for the body; so send an HTTP request to the correct location
                   // to actually obtain it
-                  val host = resLocation.originator.hostname
-                  val port = resLocation.originator.getHTTPPort
-                  //TODO make this async and store as a tmp file
-                  val body = Http("http://" + host + ":" + port + "/" + resLocation.objectId).asString.body
-                  println(node.getVirtualNode() + " Received body: " + body)
+
+
+                  resLocation.sendBodyRequest(node)
                 }
               }
             }

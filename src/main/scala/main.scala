@@ -8,7 +8,8 @@ object main extends App {
 
   node1.addNeighbour(node3.getVirtualNode())
   node1.addNeighbour(node4.getVirtualNode())
-//  node3.addNeighbour(node4.getVirtualNode())
+  node3.addNeighbour(node4.getVirtualNode())
+  node3.addNeighbour(node2.getVirtualNode())
 
-  node1.controller.requestBody("very/deep/file.txt")
+//  node1.controller.requestBody("file.txt")
 }
