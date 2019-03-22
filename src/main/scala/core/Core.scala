@@ -17,7 +17,7 @@ import invalidationlog.Log
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.mutable
-import scala.concurrent.{ExecutionContextExecutor, Promise}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success}
 
 object Core {
@@ -85,7 +85,43 @@ class Core(val node: Node) extends Runnable {
   }
 
   override def run() {
-    ServerThread(acceptSocket.accept(), node).start()
+    while (true) {
+      val s = acceptSocket.accept()
+
+      Future[Unit] {
+        receiveBody(s)
+      }(ExecutionContext.global)
+    }
+  }
+
+  def receiveBody(socket: Socket): Unit = {
+    val ds = new DataInputStream(socket.getInputStream)
+    val in = new ObjectInputStream(ds)
+
+    try {
+      in.readObject() match {
+        case body: Body =>
+          println(node + " Received body " + body.path)
+
+          body.bind(node)
+          body.receive(ds)
+          val l = listeners -= body.path
+          listeners.get(body.path).collect {
+            case list: ListBuffer[Promise[Unit]] => list.foreach(promise => promise.success())
+          }
+        case _ =>
+      }
+    } catch {
+      case e: SocketException =>
+        e.printStackTrace();
+      case e: IOException =>
+        e.printStackTrace();
+    } finally {
+      ds.close()
+      in.close()
+      socket.close()
+    }
+
   }
 
   def sendBody(virtualNode: VirtualNode, body: Body): Unit = {
@@ -100,39 +136,4 @@ class Core(val node: Node) extends Runnable {
         }
     }
   }
-
-  case class ServerThread(socket: Socket, node: Node) extends Thread("ServerThread") {
-    override def run(): Unit = {
-      val ds = new DataInputStream(socket.getInputStream)
-      val in = new ObjectInputStream(ds)
-
-      while (!Thread.interrupted()) {
-        try {
-          in.readObject() match {
-            case body: Body =>
-              println(node + " Received body " + body.path)
-
-              body.bind(node)
-              body.receive(ds)
-              val l = listeners -= body.path
-              listeners.get(body.path).collect {
-                case list: ListBuffer[Promise[Unit]] => list.foreach(promise => promise.success())
-              }
-            case _ =>
-          }
-        } catch {
-          case e: SocketException =>
-            () // avoid stack trace when stopping a client with Ctrl-C
-          case e: IOException =>
-            e.printStackTrace();
-        } finally {
-          ds.close()
-          in.close()
-          socket.close()
-        }
-
-      }
-    }
-  }
-
 }

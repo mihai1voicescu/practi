@@ -96,8 +96,8 @@ case class Controller(node: Node) extends Thread("ControlThread") {
       // reset the Object input stream each time
       val in = new ObjectInputStream(ds)
 
-      while (!Thread.interrupted()) {
-        try {
+      try {
+        while (true) {
           // block until invalidations actually come
           in.readObject() match {
             case reqFile: ReqFile =>
@@ -168,22 +168,23 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                 }
               }
             }
-            case _ =>
+            case _ => println("This shouldn't happen")
           }
         }
-        catch {
-          case e: SocketException =>
-            () // avoid stack trace when stopping a client with Ctrl-C
-          case e: IOException =>
-            e.printStackTrace();
-          case e: EOFException =>
-            e.printStackTrace()
-        } finally {
-          // Do the cleanup
-          ds.close()
-          in.close()
-          socket.close()
-        }
+      }
+      catch {
+        case e: SocketException =>
+          e.printStackTrace()
+        case e: IOException =>
+          e.printStackTrace();
+        case e: EOFException =>
+          e.printStackTrace()
+      }
+      finally {
+        // Do the cleanup
+        ds.close()
+        in.close()
+        socket.close()
       }
 
     }

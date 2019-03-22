@@ -41,10 +41,6 @@ class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Seri
       val output = controllerSocket.getOutputStream
       new ObjectOutputStream(output).writeObject(objectToSend)
 
-      val byteArray = new Array[Byte](4 * 1024)
-
-      output.write(byteArray)
-
       output.flush()
     }
   }
