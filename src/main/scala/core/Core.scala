@@ -24,7 +24,7 @@ object Core {
   private val LOGGER = Logger.getLogger(core.Core.getClass.getName)
 }
 
-class Core(val node: Node, logLocation: String) extends Runnable {
+class Core(val node: Node) extends Runnable {
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -74,9 +74,6 @@ class Core(val node: Node, logLocation: String) extends Runnable {
       }
     }
 
-
-  private val log = new Log(logLocation)
-
   private val acceptSocket = new ServerSocket(node.getCorePort, 50, InetAddress.getByName(node.hostname))
   logMessage(s"Core Server running on ${node.getControllerPort}")
 
@@ -109,9 +106,8 @@ class Core(val node: Node, logLocation: String) extends Runnable {
       val ds = new DataInputStream(socket.getInputStream)
       val in = new ObjectInputStream(ds)
 
-      while (true) {
+      while (!Thread.interrupted()) {
         try {
-
           in.readObject() match {
             case body: Body =>
               println(node + " Received body " + body.path)
@@ -129,7 +125,12 @@ class Core(val node: Node, logLocation: String) extends Runnable {
             () // avoid stack trace when stopping a client with Ctrl-C
           case e: IOException =>
             e.printStackTrace();
+        } finally {
+          ds.close()
+          in.close()
+          socket.close()
         }
+
       }
     }
   }

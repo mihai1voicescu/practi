@@ -96,7 +96,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
       // reset the Object input stream each time
       val in = new ObjectInputStream(ds)
 
-      while (true) {
+      while (!Thread.interrupted()) {
         try {
           // block until invalidations actually come
           in.readObject() match {
@@ -170,8 +170,6 @@ case class Controller(node: Node) extends Thread("ControlThread") {
             }
             case _ =>
           }
-
-          in.close()
         }
         catch {
           case e: SocketException =>
@@ -180,6 +178,11 @@ case class Controller(node: Node) extends Thread("ControlThread") {
             e.printStackTrace();
           case e: EOFException =>
             e.printStackTrace()
+        } finally {
+          // Do the cleanup
+          ds.close()
+          in.close()
+          socket.close()
         }
       }
 

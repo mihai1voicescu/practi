@@ -25,7 +25,7 @@ class Node(port: Int, val root: String, hostname: String = "localhost", id: Int)
   // Root directory for storing checkpoint
   val checkpointDir = root + "checkpoint/"
 
-  val core = new Core(this, logDir + "log.txt")
+  val core = new Core(this)
   val controller = Controller(this)
   var neighbours: ListBuffer[VirtualNode] = ListBuffer()
   val checkpoint = new Checkpoint(checkpointDir)
