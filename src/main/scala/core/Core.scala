@@ -37,32 +37,38 @@ class Core(val node: Node) extends Runnable {
 
     get {
       path(Remaining) { name: String =>
-        handleRejections(RejectionHandler.newBuilder()
-          .handleNotFound({
-            node.controller.requestBody(name)
+//        handleRejections(RejectionHandler.newBuilder()
+//          .handleNotFound({
+//            logMessage("Body not found")
+//            node.controller.requestBody(name)
+//
+//
+//            val p = Promise[Unit]()
+//            listeners.get(name) match {
+//              case None =>
+//                val l = ListBuffer[Promise[Unit]]()
+//                listeners.+=(name -> l)
+//                l += p
+//              case Some(r) => r += p
+//            }
+//
+//
+//            onComplete(p.future) {
+//              case Success(_) => println("COMPLETED")
+//                getFromFile(node.dataDir + name)
+//              // todo Failure is actually on top
+//              case Failure(_) => complete(StatusCodes.NotFound)
+//            }
+//          })
+//          .result())
 
-
-            val p = Promise[Unit]()
-            listeners.get(name) match {
-              case None =>
-                val l = ListBuffer[Promise[Unit]]()
-                listeners.+=(name -> l)
-                l += p
-              case Some(r) => r += p
-            }
-
-
-            onComplete(p.future) {
-              case Success(_) => println("COMPLETED")
-                getFromFile(node.dataDir + name)
-              // todo Failure is actually on top
-              case Failure(_) => complete(StatusCodes.NotFound)
-            }
-          })
-          .result()) {
+      {
           fileHelper.checkSandbox(name)
-          if (node.hasValidBody(name))
+          if (node.hasValidBody(name)) {
+            logMessage("File valid")
             getFromFile(node.dataDir + name) // uses implicit ContentTypeResolver
+          }
+
           else {
             val p = Promise[Unit]()
             listeners.get(name) match {
@@ -165,9 +171,9 @@ class Core(val node: Node) extends Runnable {
     a match {
       case Some(checkpointItem) =>
         if (checkpointItem.invalid) {
-          println(node + " not sending body " + body.path + " to " + virtualNode + " as it is invalid")
+          logMessage(node + " not sending body " + body.path + " to " + virtualNode + " as it is invalid")
         } else {
-          println(node + " Sending body to " + virtualNode + " for " + body.path)
+          logMessage(node + " Sending body to " + virtualNode + " for " + body.path)
           body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
         }
     }
