@@ -61,7 +61,24 @@ class Core(val node: Node) extends Runnable {
           })
           .result()) {
           fileHelper.checkSandbox(name)
-          getFromFile(node.dataDir + name) // uses implicit ContentTypeResolver
+          if (node.hasValidBody(name))
+            getFromFile(node.dataDir + name) // uses implicit ContentTypeResolver
+          else {
+            val p = Promise[Unit]()
+            listeners.get(name) match {
+              case None =>
+                val l = ListBuffer[Promise[Unit]]()
+                listeners.+=(name -> l)
+                l += p
+              case Some(r) => r += p
+            }
+            onComplete(p.future) {
+              case Success(_) => println("COMPLETED")
+                getFromFile(node.dataDir + name)
+              // todo Failure is actually on top
+              case Failure(_) => complete(StatusCodes.NotFound)
+            }
+          }
         }
       }
     } ~ withSizeLimit(200 * 1024 * 1024) {
@@ -119,13 +136,13 @@ class Core(val node: Node) extends Runnable {
 
           if (node.checkpoint.isNewer(body)) {
             body.bind(node)
-            body.receive(ds, node.checkpoint) .onComplete(_ => {
-              listeners.remove( body.path) match {
+            body.receive(ds, node.checkpoint).onComplete(_ => {
+              listeners.remove(body.path) match {
                 case Some(l) => l.foreach(_.success())
                 case None =>
               }
             })
-          }else {
+          } else {
             println("BODY IS OLD")
           }
 
