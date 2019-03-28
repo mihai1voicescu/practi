@@ -70,6 +70,7 @@ class Core(val node: Node) extends Runnable {
           }
 
           else {
+            node.controller.requestBody(name)
             val p = Promise[Unit]()
             listeners.get(name) match {
               case None =>
@@ -79,7 +80,7 @@ class Core(val node: Node) extends Runnable {
               case Some(r) => r += p
             }
             onComplete(p.future) {
-              case Success(_) => println("COMPLETED")
+              case Success(_) => logMessage("Completed body get")
                 getFromFile(node.dataDir + name)
               // todo Failure is actually on top
               case Failure(_) => complete(StatusCodes.NotFound)
