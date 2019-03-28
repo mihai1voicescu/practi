@@ -23,9 +23,8 @@ object fileHelper {
     File.createTempFile(fileInfo.fileName, ".tmp")
 
   def makeUnix(str: String): String = {
-    var withoutSlash = str.substring(1)
-    withoutSlash = withoutSlash.replace("\\", "/")
-    withoutSlash
+    val s = if (str.charAt(0) == '/') str.substring(1) else str
+    s.replace("\\", "/")
   }
 
 }

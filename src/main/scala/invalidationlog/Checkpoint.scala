@@ -95,7 +95,7 @@ class Checkpoint(dir: String) extends Serializable {
             val dir = file.getParentFile
             dir.mkdirs()
           } catch {
-            case e :Exception =>
+            case e: Exception =>
               e.printStackTrace()
           }
         }
