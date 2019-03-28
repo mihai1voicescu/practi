@@ -33,9 +33,10 @@ case class Controller(node: Node) extends Thread("ControlThread") {
     *
     * @param invalidation
     */
-  def sendInvalidationForAllNeighbours(invalidation: Invalidation): Unit = {
+  def sendInvalidationForAllNeighbours(invalidation: Invalidation, newStamp : Boolean= true): Unit = {
     // stamp the operation
-    invalidation.sendStamp()
+    if (newStamp)
+      invalidation.sendStamp()
     node.neighbours.foreach(n => n.sendToControllerAsync(invalidation))
   }
 
@@ -72,10 +73,10 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   def connectToNodeController(virtualNode: VirtualNode): Unit = {
   }
 
-  def invalidate(objectId: String): Unit = {
+  def invalidate(objectId: String, newStamp : Boolean= true): Unit = {
     val invalidation = Invalidation(objectId, clock.time, node.id)
 
-    sendInvalidationForAllNeighbours(invalidation)
+    sendInvalidationForAllNeighbours(invalidation, newStamp)
   }
 
   override def run(): Unit = {

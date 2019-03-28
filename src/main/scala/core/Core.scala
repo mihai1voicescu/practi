@@ -14,7 +14,7 @@ import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 import akka.stream.ActorMaterializer
 import controller.ReqBody
 import helper.fileHelper
-import invalidationlog.Log
+import invalidationlog.{CheckpointItem, Log}
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.mutable
@@ -104,7 +104,12 @@ class Core(val node: Node) extends Runnable {
               }
 
               Files.move(file.toPath, Paths.get(node.dataDir + objectId), StandardCopyOption.REPLACE_EXISTING)
-              node.invalidate(objectId)
+              val body = node.createBody(objectId)
+              body.sendStamp()
+
+              node.checkpoint.update(CheckpointItem(objectId, body, invalid = false, clock.clock.time))
+
+              node.invalidate(objectId, newStamp = false)
 
               complete(StatusCodes.OK)
           }
