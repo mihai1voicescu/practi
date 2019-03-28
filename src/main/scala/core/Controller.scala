@@ -7,7 +7,6 @@ import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 import clock.clock
 import controller.{BodyRequestScheduler, ReqFile, ResLocation}
 import invalidationlog._
-import scalaj.http.Http
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -80,7 +79,8 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   }
 
   override def run(): Unit = {
-    InvalidationThread(acceptSocket.accept()).start()
+    while (true)
+      InvalidationThread(acceptSocket.accept()).start()
   }
 
   /**
@@ -91,6 +91,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   case class InvalidationThread(socket: Socket) extends Thread("InvalidationThread") {
 
     override def run(): Unit = {
+      println("New connection")
       // controllers need to be continuously connected to each other awaiting invalidations
       val ds = new DataInputStream(socket.getInputStream)
       // reset the Object input stream each time
@@ -98,7 +99,6 @@ case class Controller(node: Node) extends Thread("ControlThread") {
 
       try {
         while (true) {
-
           // block until invalidations actually come
           val o = in.readObject()
           o match {
