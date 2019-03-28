@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.logging.{Level, Logger}
 
-import com.sun.javaws.exceptions.InvalidArgumentException
 import helper.CheckpointSeeder
 import invalidationlog.{Checkpoint, CheckpointItem}
 
