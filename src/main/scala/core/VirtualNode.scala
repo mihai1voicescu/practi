@@ -23,7 +23,7 @@ class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Seri
   }
 
   @transient def getControllerSocket: Socket = {
-    if (controllerSocket == null) {
+    if (controllerSocket == null || controllerSocket.isClosed) {
       controllerSocket = new Socket(hostname, getControllerPort)
       controllerSocket.setKeepAlive(true)
     }
