@@ -23,10 +23,9 @@ class CheckpointSeeder(node: Node) {
     files.foreach(f => {
       extractId(f.getPath) match {
         case Some(bodyId) => {
-          var withoutSlash = bodyId.substring(1)
-          withoutSlash = withoutSlash.replace("\\", "/")
+
           // Create and insert body to checkpoint
-          val bod = node.createBody(withoutSlash)
+          val bod = node.createBody(fileHelper.makeUnix(bodyId))
           val chkIt = new CheckpointItem(bod.path, bod, false, clock.clock.time)
           node.checkpoint.update(chkIt)
         }
@@ -34,6 +33,7 @@ class CheckpointSeeder(node: Node) {
       }
     })
   }
+
 
   /**
     * Function that extracts root dir from file path.

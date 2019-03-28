@@ -4,7 +4,7 @@ import java.io.{IOException, _}
 import java.util.logging.{Level, Logger}
 
 import core.{Body, glob}
-import helper.CheckpointSeeder
+import helper.{CheckpointSeeder, fileHelper}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -132,7 +132,9 @@ class Checkpoint(dir: String) extends Serializable {
     * @return
     */
   private def insert(item: CheckpointItem): CheckpointItem = {
-    items += item.id -> item
+    val it = new CheckpointItem(fileHelper.makeUnix(item.id), item.body, item.invalid, item.timestamp)
+    items += item.id -> it
+
     return item
   }
 

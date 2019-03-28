@@ -22,4 +22,10 @@ object fileHelper {
   def tempDestination(fileInfo: FileInfo): File =
     File.createTempFile(fileInfo.fileName, ".tmp")
 
+  def makeUnix(str: String): String = {
+    var withoutSlash = str.substring(1)
+    withoutSlash = withoutSlash.replace("\\", "/")
+    withoutSlash
+  }
+
 }

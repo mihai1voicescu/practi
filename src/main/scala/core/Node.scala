@@ -35,6 +35,7 @@ class Node(port: Int, val root: String, hostname: String = "localhost", id: Int)
     new Thread(core).start()
     // It should be run only once, Checkpoint persists it's state after shutting down the application and initializes from file on start.
     if (glob.seedCheckpoint) {
+      logMessage("Checkpoint seeded.")
       val seeder = new CheckpointSeeder(this)
       seeder.seedCheckpoint()
     }
