@@ -94,7 +94,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   case class InvalidationThread(socket: Socket) extends Thread("InvalidationThread") {
 
     override def run(): Unit = {
-      println("New connection")
+      node.logMessage("New connection: " + socket)
       // controllers need to be continuously connected to each other awaiting invalidations
       val ds = new DataInputStream(socket.getInputStream)
       // reset the Object input stream each time
@@ -139,7 +139,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
 
               }
             case invalidation: Invalidation => {
-              println(node + " Received invalidation with timestamp: " + invalidation.timestamp)
+              node.logMessage("Received invalidation with timestamp " + invalidation.timestamp + " for " + invalidation.objId)
 
               //process the invalidation
               processors.foreach(p => p.process(invalidation))

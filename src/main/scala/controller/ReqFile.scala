@@ -9,7 +9,7 @@ case class ReqFile(originator: VirtualNode, requestingNode: VirtualNode, objectI
   path = List(originator)
 
   def send(): Unit = {
-    println(requestingNode + " sending body request to " + receivingNode + " for " + objectId)
+    requestingNode.logMessage("Sending body request to " + receivingNode + " for " + objectId)
     receivingNode.sendToControllerAsync(this)
   }
 }

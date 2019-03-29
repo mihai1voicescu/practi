@@ -155,7 +155,7 @@ class Core(val node: Node) extends Runnable {
     try {
       in.readObject() match {
         case body: Body =>
-          println(node + " Received body " + body.path)
+          logMessage("Received body " + body.path)
 
           if (node.checkpoint.isNewer(body)) {
             body.bind(node)
@@ -166,7 +166,7 @@ class Core(val node: Node) extends Runnable {
               }
             })
           } else {
-            println("BODY IS OLD")
+            logMessage("Received body " + body.path + " but it is old")
           }
 
         case reqBody: ReqBody =>

@@ -2,8 +2,13 @@ package core
 
 import java.io.{IOException, ObjectOutputStream, OutputStream}
 import java.net.Socket
+import java.util.logging.{Level, Logger}
 
 import scala.concurrent.{ExecutionContext, Future}
+
+object VirtualNode {
+  private val LOGGER = Logger.getLogger(core.Node.getClass.getName)
+}
 
 class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Serializable {
 
@@ -64,6 +69,10 @@ class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Seri
     Future {
       sendToController(objectToSend)
     }(ExecutionContext.global)
+  }
+
+  @transient def logMessage(message: String, level: Level = null, logger: Logger = VirtualNode.LOGGER): Unit = {
+    logger.log(if (level == null) Level.INFO else level, s"[ID:$id][$hostname]\t$message")
   }
 
   override def toString: String = {
