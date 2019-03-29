@@ -1,6 +1,6 @@
 package clock
 
-class Clock {
+class Clock extends Serializable {
   var time :Long = 0
 
   def sendStamp(obj : ClockInfluencer): Unit = {

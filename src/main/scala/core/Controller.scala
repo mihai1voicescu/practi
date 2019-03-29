@@ -141,8 +141,13 @@ case class Controller(node: Node) extends Thread("ControlThread") {
             case invalidation: Invalidation => {
               node.logMessage("Received invalidation with timestamp " + invalidation.timestamp + " for " + invalidation.objId)
 
-              //process the invalidation
-              processors.foreach(p => p.process(invalidation))
+              if (invalidation.nodeId != node.id) {
+                node.logMessage("Invalidating")
+                //process the invalidation
+                processors.foreach(p => p.process(invalidation))
+              }
+
+
             }
             case resLocation: ResLocation => {
               if (!processedResponses.contains(resLocation.requestId)) {

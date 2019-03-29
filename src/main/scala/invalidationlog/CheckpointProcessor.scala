@@ -27,7 +27,7 @@ class CheckpointProcessor(controller: Controller) extends Processor {
     val maybeItem = controller.node.checkpoint.getById(newBod.path)
     maybeItem match {
       case Some(value) => processExistingBod(value, newBod)
-      case None =>
+      case None => addNewBody(newBod)
     }
   }
 
@@ -64,6 +64,9 @@ class CheckpointProcessor(controller: Controller) extends Processor {
     // not sure what to do with invalidations that contains object ID which is not in the checkpoint
   }
 
+  private def addNewBody(body: Body): Unit = {
+      controller.node.checkpoint.update(CheckpointItem(body.path, body, false, controller.node.clock.time))
+  }
   /**
     * Method that processes invalidation on existing checkpoint item. If timestamp of invalidation is higher, it updates checkpoint, marking the item invalid
     *

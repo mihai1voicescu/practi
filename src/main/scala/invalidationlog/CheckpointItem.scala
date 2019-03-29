@@ -1,6 +1,7 @@
 package invalidationlog
 
 import core.Body
+import helper.fileHelper
 
 /**
   * Data holder class for @Checkpoint.
@@ -9,5 +10,6 @@ import core.Body
   * @param invalid
   * @param timestamp
   */
-case class CheckpointItem(id: String, body: Body, invalid: Boolean, timestamp: Long) {
+case class CheckpointItem(var id: String, body: Body, invalid: Boolean, timestamp: Long) {
+  id = fileHelper.makeUnix(id)
 }

@@ -2,7 +2,7 @@ package clock
 
 import core.Node
 
-trait ClockInfluencer {
+trait ClockInfluencer  extends Serializable {
   var timestamp : Long
 
   //  def sendStamp(n: Node): Unit = {
