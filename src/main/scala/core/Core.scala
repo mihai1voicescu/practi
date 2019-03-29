@@ -14,7 +14,7 @@ import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 import akka.stream.ActorMaterializer
 import controller.ReqBody
 import helper.fileHelper
-import invalidationlog.{CheckpointItem, Log}
+import invalidationlog._
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.mutable
@@ -32,6 +32,8 @@ class Core(val node: Node) extends Runnable {
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
   private val listeners = new mutable.ParHashMap[String, ListBuffer[Promise[Unit]]]()
 
+  private val checkpointProcessor = new CheckpointProcessor(node.controller)
+  private val invProcessor = new InvalidationProcessor(node.controller)
 
   private val route =
 
@@ -105,11 +107,20 @@ class Core(val node: Node) extends Runnable {
 
               Files.move(file.toPath, Paths.get(node.dataDir + objectId), StandardCopyOption.REPLACE_EXISTING)
               val body = node.createBody(objectId)
-              body.sendStamp()
 
-              node.checkpoint.update(CheckpointItem(objectId, body, invalid = false, clock.clock.time))
+              // Increase clock in order to save body with newest time, and send invalidations with the same newest time
+              body.receiveStamp()
+              // update checkpoint first.
+              checkpointProcessor.processUpdate(body)
 
-              node.invalidate(objectId, newStamp = false)
+              // invalidate other nodes.
+              invProcessor.processUpdate(objectId)
+
+              //              These methods are changed with original methods which were supposed to handle invalidations and checkpoint processing (lines above)
+              //              Left commented in case something doesnt work.
+
+              //              node.checkpoint.update(CheckpointItem(objectId, body, invalid = false, clock.clock.time))
+              //              node.invalidate(objectId, newStamp = false)
 
               complete(StatusCodes.OK)
           }

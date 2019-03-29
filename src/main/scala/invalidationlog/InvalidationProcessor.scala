@@ -11,7 +11,7 @@ import core.Controller
 
 class InvalidationProcessor(controller: Controller) extends Processor {
   /**
-    * Method, that contains invalidation processing logic
+    * Method, that contains incoming invalidation processing logic
     *
     * @param invalidation to process
     */
@@ -21,8 +21,19 @@ class InvalidationProcessor(controller: Controller) extends Processor {
     if (invalidation.timestamp > clock.time) {
       controller.log.insert(invalidation)
 
-      //NOTE: this is not tested yet. Probably will change heavily.
       controller.sendInvalidationForAllNeighbours(invalidation)
     }
+  }
+
+  /**
+    * Method that processes object update. It expects already *increased* clock and sends the invalidation to all neighbours
+    *
+    * @param objId
+    */
+  def processUpdate(objId: String): Unit = {
+    val invalidation = Invalidation(objId, clock.time, controller.node.id)
+
+    //notifying the neighbours about invalidated object.
+    controller.sendInvalidationForAllNeighbours(invalidation, false)
   }
 }

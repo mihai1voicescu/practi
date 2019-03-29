@@ -28,16 +28,13 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   this.start()
   this.checkInvalidationsScheduled()
 
-  /**
-    * Controller method that is responsible for sending invalidations for all neighbors found in @node
-    *
-    * @param invalidation
-    */
-  def sendInvalidationForAllNeighbours(invalidation: Invalidation, newStamp : Boolean= true): Unit = {
-    // stamp the operation
-    if (newStamp)
-      invalidation.sendStamp()
-    node.neighbours.foreach(n => n.sendToControllerAsync(invalidation))
+  // Left this method in order to rollback if something doesnt work.
+  // you should use invalidationProcessor class and method "processUpdate"
+  @Deprecated
+  def invalidate(objectId: String, newStamp: Boolean = true): Unit = {
+    val invalidation = Invalidation(objectId, clock.time, node.id)
+
+    sendInvalidationForAllNeighbours(invalidation, newStamp)
   }
 
   /**
@@ -73,10 +70,15 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   def connectToNodeController(virtualNode: VirtualNode): Unit = {
   }
 
-  def invalidate(objectId: String, newStamp : Boolean= true): Unit = {
-    val invalidation = Invalidation(objectId, clock.time, node.id)
-
-    sendInvalidationForAllNeighbours(invalidation, newStamp)
+  /**
+    * Controller method that is responsible for sending invalidations for all neighbors found in @node
+    *
+    * @param invalidation
+    */
+  def sendInvalidationForAllNeighbours(invalidation: Invalidation, newStamp: Boolean = true): Unit = {
+    // stamp the operation
+    if (newStamp) invalidation.sendStamp()
+    node.neighbours.foreach(n => n.sendToControllerAsync(invalidation))
   }
 
   override def run(): Unit = {

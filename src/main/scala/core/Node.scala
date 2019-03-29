@@ -56,9 +56,9 @@ class Node(port: Int, val root: String, hostname: String = "localhost", id: Int)
     controller.connectToNodeController(neighbour)
   }
 
-  def invalidate(objectId: String, newStamp : Boolean= true): Unit = {
-    controller.invalidate(objectId)
-  }
+  //  def invalidate(objectId: String, newStamp : Boolean= true): Unit = {
+  //    controller.invalidate(objectId)
+  //  }
 
   def sendToAllNeighbours(body: Body): Unit = {
     for (n <- neighbours) {

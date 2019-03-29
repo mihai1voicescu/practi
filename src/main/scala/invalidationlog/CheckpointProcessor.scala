@@ -9,7 +9,7 @@ import core.{Body, Controller}
   */
 class CheckpointProcessor(controller: Controller) extends Processor {
   /**
-    * General method that processes upcoming invalidation in terms of checkpoint.
+    * General method that processes incoming invalidation in terms of checkpoint.
     *
     * @param invalidation
     */
@@ -23,25 +23,14 @@ class CheckpointProcessor(controller: Controller) extends Processor {
     * @param body
     * @return
     */
-  private def processBody(maybeItem: Option[CheckpointItem], newBod: Body) = {
+  def processUpdate(newBod: Body) = {
+    val maybeItem = controller.node.checkpoint.getById(newBod.path)
     maybeItem match {
       case Some(value) => processExistingBod(value, newBod)
       case None =>
     }
   }
 
-  /**
-    * Function that handles existing and non existing body entry in @Checkpoint and updates it with appropriate logic
-    *
-    * @param maybeItem
-    * @param newBod
-    * @return
-    */
-  private def processBody(maybeItem: CheckpointItem, newBod: Body) = {
-    if (maybeItem.isInstanceOf[CheckpointItem]) {
-      processExistingBod(maybeItem, newBod)
-    }
-  }
 
   /**
     * Function that updates the existing body entry in @Checkpoint . It contains all the update logic.

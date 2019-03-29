@@ -133,7 +133,7 @@ class Checkpoint(dir: String) extends Serializable {
     */
   private def insert(item: CheckpointItem): CheckpointItem = {
     val it = new CheckpointItem(fileHelper.makeUnix(item.id), item.body, item.invalid, item.timestamp)
-    items += item.id -> it
+    items += it.id -> it
 
     return item
   }
