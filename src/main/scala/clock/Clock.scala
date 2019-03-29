@@ -1,6 +1,6 @@
 package clock
 
-object clock {
+class Clock {
   var time :Long = 0
 
   def sendStamp(obj : ClockInfluencer): Unit = {

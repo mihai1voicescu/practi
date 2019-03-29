@@ -1,15 +1,17 @@
 package clock
 
+import core.Node
+
 trait ClockInfluencer {
   var timestamp : Long
 
-  def sendStamp(): Unit = {
-    timestamp = clock.time
-    clock.sendStamp(this)
-  }
-
-  def receiveStamp(): Unit = {
-    clock.receiveStamp(this)
-
-  }
+  //  def sendStamp(n: Node): Unit = {
+  //    timestamp = n.clock.time
+  //    n.clock.sendStamp(this)
+  //  }
+  //
+  //  def receiveStamp(n: Node): Unit = {
+  //    n.clock.receiveStamp(this)
+  //
+  //  }
 }

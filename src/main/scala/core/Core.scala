@@ -109,7 +109,7 @@ class Core(val node: Node) extends Runnable {
               val body = node.createBody(objectId)
 
               // Increase clock in order to save body with newest time, and send invalidations with the same newest time
-              body.receiveStamp()
+              node.clock.sendStamp(body)
               // update checkpoint first.
               checkpointProcessor.processUpdate(body)
 
@@ -159,7 +159,7 @@ class Core(val node: Node) extends Runnable {
 
           if (node.checkpoint.isNewer(body)) {
             body.bind(node)
-            body.receive(ds, node.checkpoint).onComplete(_ => {
+            body.receive(ds, node.checkpoint, node.clock).onComplete(_ => {
               listeners.remove(body.path) match {
                 case Some(l) => l.foreach(_.success())
                 case None =>
@@ -191,7 +191,7 @@ class Core(val node: Node) extends Runnable {
           logMessage(node + " not sending body " + body.path + " to " + virtualNode + " as it is invalid")
         } else {
           logMessage(node + " Sending body to " + virtualNode + " for " + body.path)
-          body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort))
+          body.send(new Socket(virtualNode.hostname, virtualNode.getCorePort), node.clock)
         }
     }
   }

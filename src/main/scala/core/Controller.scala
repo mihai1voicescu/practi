@@ -4,7 +4,7 @@ import java.io._
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
 import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
-import clock.clock
+import clock.Clock
 import controller.{BodyRequestScheduler, ReqFile, ResLocation}
 import invalidationlog._
 
@@ -32,7 +32,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
   // you should use invalidationProcessor class and method "processUpdate"
   @Deprecated
   def invalidate(objectId: String, newStamp: Boolean = true): Unit = {
-    val invalidation = Invalidation(objectId, clock.time, node.id)
+    val invalidation = Invalidation(objectId, node.clock.time, node.id)
 
     sendInvalidationForAllNeighbours(invalidation, newStamp)
   }
@@ -77,7 +77,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
     */
   def sendInvalidationForAllNeighbours(invalidation: Invalidation, newStamp: Boolean = true): Unit = {
     // stamp the operation
-    if (newStamp) invalidation.sendStamp()
+    if (newStamp) node.clock.sendStamp(invalidation)
     node.neighbours.foreach(n => n.sendToControllerAsync(invalidation))
   }
 

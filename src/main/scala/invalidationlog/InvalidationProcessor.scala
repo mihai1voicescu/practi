@@ -1,6 +1,6 @@
 package invalidationlog
 
-import clock.clock
+import clock.Clock
 import core.Controller
 
 /**
@@ -16,13 +16,14 @@ class InvalidationProcessor(controller: Controller) extends Processor {
     * @param invalidation to process
     */
   def process(invalidation: Invalidation): Unit = {
-    clock.receiveStamp(invalidation);
 
-    if (invalidation.timestamp > clock.time) {
+    if (invalidation.timestamp > controller.node.clock.time) {
       controller.log.insert(invalidation)
 
       controller.sendInvalidationForAllNeighbours(invalidation)
     }
+
+    controller.node.clock.receiveStamp(invalidation);
   }
 
   /**
@@ -31,7 +32,7 @@ class InvalidationProcessor(controller: Controller) extends Processor {
     * @param objId
     */
   def processUpdate(objId: String): Unit = {
-    val invalidation = Invalidation(objId, clock.time, controller.node.id)
+    val invalidation = Invalidation(objId, controller.node.clock.time, controller.node.id)
 
     //notifying the neighbours about invalidated object.
     controller.sendInvalidationForAllNeighbours(invalidation, false)

@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.logging.{Level, Logger}
 
+import clock.Clock
 import helper.CheckpointSeeder
 import invalidationlog.{Checkpoint, CheckpointItem}
 
@@ -15,6 +16,7 @@ object Node {
 }
 
 class Node(port: Int, val root: String, hostname: String = "localhost", id: Int) extends VirtualNode(id, hostname, port) {
+  val clock = new Clock()
   // Root directory for storing data of @Body
   val dataDir = root + "data/"
 
@@ -24,8 +26,8 @@ class Node(port: Int, val root: String, hostname: String = "localhost", id: Int)
   // Root directory for storing checkpoint
   val checkpointDir = root + "checkpoint/"
 
-  val core = new Core(this)
   val controller = Controller(this)
+  val core = new Core(this)
   var neighbours: ListBuffer[VirtualNode] = ListBuffer()
   val checkpoint = new Checkpoint(checkpointDir)
 

@@ -77,5 +77,7 @@ class CheckpointProcessor(controller: Controller) extends Processor {
 
     val newItem = new CheckpointItem(item.id, item.body, true, inv.timestamp)
     controller.node.checkpoint.update(newItem)
+
+    controller.node.clock.receiveStamp(inv)
   }
 }

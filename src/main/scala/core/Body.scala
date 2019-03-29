@@ -4,7 +4,7 @@ import java.io._
 import java.net.Socket
 import java.nio.file.{Files, Paths}
 
-import clock.ClockInfluencer
+import clock.{Clock, ClockInfluencer}
 import helper.fileHelper
 import invalidationlog.Checkpoint
 
@@ -19,7 +19,7 @@ case class Body(@transient var directory: String, path: String) extends Serializ
     directory = node.dataDir
   }
 
-  def send(conn: Socket, withStamp :Boolean = true): Unit = {
+  def send(conn: Socket, clock: Clock, withStamp: Boolean = true): Unit = {
     val input = new BufferedInputStream(new FileInputStream(directory + path))
     val output = conn.getOutputStream
 
@@ -28,7 +28,7 @@ case class Body(@transient var directory: String, path: String) extends Serializ
     val byteArray = new Array[Byte](4 * 1024)
 
     if (withStamp)
-      sendStamp()
+      clock.sendStamp(this)
 
     Future {
       try {
@@ -48,7 +48,7 @@ case class Body(@transient var directory: String, path: String) extends Serializ
     }(ExecutionContext.global)
   }
 
-  def receive(ds: InputStream, checkpoint: Checkpoint): Future[Unit] = {
+  def receive(ds: InputStream, checkpoint: Checkpoint, clock: Clock): Future[Unit] = {
     fileHelper.checkSandbox(path)
 
     val filePath = directory + path
@@ -60,7 +60,7 @@ case class Body(@transient var directory: String, path: String) extends Serializ
 
     val byteArray = new Array[Byte](4 * 1024)
 
-    receiveStamp()
+    clock.receiveStamp(this)
 
     Future {
       try {
