@@ -72,7 +72,7 @@ class VirtualNode(val id: Int, val hostname: String, val port: Int) extends Seri
   }
 
   @transient def logMessage(message: String, level: Level = null, logger: Logger = VirtualNode.LOGGER): Unit = {
-    logger.log(if (level == null) Level.INFO else level, s"[ID:$id][$hostname]\t$message")
+    logger.log(if (level == null) Level.INFO else level, s"=======>[ID:$id][$hostname]\t$message\n")
   }
 
   override def toString: String = {

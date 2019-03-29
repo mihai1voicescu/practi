@@ -17,13 +17,18 @@ class InvalidationProcessor(controller: Controller) extends Processor {
     */
   def process(invalidation: Invalidation): Unit = {
 
-    if (invalidation.timestamp > controller.node.clock.time) {
-      controller.log.insert(invalidation)
-
-      controller.sendInvalidationForAllNeighbours(invalidation)
+    controller.node.checkpoint.getById(invalidation.objId) match {
+      case None =>
+        controller.log.insert(invalidation)
+        controller.sendInvalidationForAllNeighbours(invalidation)
+      case Some(checkpointItem) =>
+        if (invalidation.timestamp > checkpointItem.timestamp || invalidation.timestamp == checkpointItem.timestamp && invalidation.nodeId < controller.node.id) {
+          controller.log.insert(invalidation)
+          controller.sendInvalidationForAllNeighbours(invalidation)
+        }
     }
 
-    controller.node.clock.receiveStamp(invalidation);
+    controller.node.clock.receiveStamp(invalidation)
   }
 
   /**

@@ -12,6 +12,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
+case class Location(virtualNode: VirtualNode, timestamp: Int) {
+}
+
 case class Controller(node: Node) extends Thread("ControlThread") {
 
 
@@ -150,7 +153,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
 
             }
             case resLocation: ResLocation => {
-              if (!processedResponses.contains(resLocation.requestId)) {
+              if (!processedResponses.contains(resLocation.requestId) && resLocation.originator.id != node.id) {
                 processedResponses += resLocation.requestId
                 //The node gets information about where to find a file
                 //Never update the location, use the first location only as this is most likely the fastest path to use

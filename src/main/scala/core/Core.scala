@@ -72,6 +72,7 @@ class Core(val node: Node) extends Runnable {
           }
 
           else {
+            logMessage("Requesting body")
             node.controller.requestBody(name)
             val p = Promise[Unit]()
             listeners.get(name) match {
