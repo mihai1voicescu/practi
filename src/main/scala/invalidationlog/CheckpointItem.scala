@@ -11,5 +11,5 @@ import helper.fileHelper
   * @param timestamp
   */
 case class CheckpointItem(var id: String, body: Body, invalid: Boolean, timestamp: Long) {
-  id = fileHelper.makeUnix(id)
+  id = "/" + fileHelper.makeUnix(id)
 }

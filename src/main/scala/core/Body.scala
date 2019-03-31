@@ -11,7 +11,7 @@ import invalidationlog.Checkpoint
 import scala.concurrent.{ExecutionContext, Future}
 
 case class Body(@transient var directory: String,var path: String) extends Serializable with ClockInfluencer  {
-  path = fileHelper.makeUnix(path)
+  path = "/" + fileHelper.makeUnix(path)
   override var timestamp: Long = 0
 
   import java.io.FileInputStream

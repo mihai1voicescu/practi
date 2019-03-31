@@ -25,8 +25,8 @@ class CheckpointSeeder(node: Node) {
         case Some(bodyId) => {
 
           // Create and insert body to checkpoint
-          val bod = node.createBody(fileHelper.makeUnix(bodyId))
-          val chkIt = new CheckpointItem(fileHelper.makeUnix(bod.path), bod, false, node.clock.time)
+          val bod = node.createBody(bodyId)
+          val chkIt = new CheckpointItem(bod.path, bod, false, node.clock.time)
           node.checkpoint.update(chkIt)
         }
         case None => throw new IllegalArgumentException("Could not extract file id from File path")
