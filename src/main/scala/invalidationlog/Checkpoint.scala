@@ -48,7 +48,7 @@ class Checkpoint(dir: String) extends Serializable {
     * @return
     */
   def getById(objId: String): Option[CheckpointItem] = {
-    items.contains(fileHelper.makeUnix(objId)) match {
+    items.contains(objId) match {
       case true => Some(items(objId))
       case _ => None
     }
