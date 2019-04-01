@@ -73,10 +73,12 @@ class Checkpoint(dir: String) extends Serializable {
     * @param newItem
     */
   def update(newItem: CheckpointItem): CheckpointItem = {
-    items.contains(newItem.id) match {
+    val id = fileHelper.makeUnix(newItem.id)
+
+    items.contains(id) match {
       case false => insert(newItem)
       case _ => {
-        items.update(newItem.id, newItem)
+        items.update(id, newItem)
         return newItem
       }
     }

@@ -2,7 +2,6 @@ package core
 
 import java.io._
 import java.net.Socket
-import java.nio.file.{Files, Paths}
 
 import clock.{Clock, ClockInfluencer}
 import helper.fileHelper
@@ -10,8 +9,8 @@ import invalidationlog.Checkpoint
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class Body(@transient var directory: String,var path: String) extends Serializable with ClockInfluencer  {
-  path = "/" + fileHelper.makeUnix(path)
+case class Body(@transient var directory: String, var path: String) extends Serializable with ClockInfluencer {
+  path = fileHelper.makeUnix(path)
   override var timestamp: Long = 0
 
   import java.io.FileInputStream
@@ -43,7 +42,7 @@ case class Body(@transient var directory: String,var path: String) extends Seria
         output.close()
         conn.close()
       } catch {
-        case e :Exception =>
+        case e: Exception =>
           e.printStackTrace()
       }
     }(ExecutionContext.global)
@@ -74,7 +73,7 @@ case class Body(@transient var directory: String,var path: String) extends Seria
 
         }
       } catch {
-        case e : Exception=>
+        case e: Exception =>
           e.printStackTrace()
       }
 
