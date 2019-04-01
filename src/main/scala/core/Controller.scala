@@ -115,6 +115,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
 
                 //If the current node has the file but has not yet marked it in its table, do so now
                 if (node.hasValidBody(reqFile.objectId)) {
+                  node.logMessage(s"ObjectId ${reqFile.objectId} is present and valid.")
                   if (!locationTable.contains(reqFile.objectId)) {
                     val nodeQueue = mutable.Queue[VirtualNode]()
                     nodeQueue.enqueue(node.getVirtualNode())
@@ -123,6 +124,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
                   val locationResponse = ResLocation(reqFile.objectId, reqFile.path, node.getVirtualNode(), reqFile.requestId)
                   locationResponse.send()
                 } else {
+                  node.logMessage(s"ObjectId ${reqFile.objectId} is not present/valid.")
                   //Current node does not have the file; ask neighbour(s)
                   if (locationTable.contains(reqFile.objectId)) {
                     val frontNode = locationTable(reqFile.objectId).front
@@ -142,7 +144,7 @@ case class Controller(node: Node) extends Thread("ControlThread") {
 
               }
             case invalidation: Invalidation => {
-              node.logMessage("Received invalidation with timestamp " + invalidation.timestamp + " for " + invalidation.objId)
+              node.logMessage("Received invalidation with timestamp " + invalidation.timestamp + " for " + invalidation.objId + " from " + invalidation.nodeId)
 
               if (invalidation.nodeId != node.id) {
                 if (locationTable.contains(invalidation.objId)) {

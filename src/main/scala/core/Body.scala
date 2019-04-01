@@ -23,12 +23,14 @@ case class Body(@transient var directory: String, var path: String) extends Seri
     val input = new BufferedInputStream(new FileInputStream(directory + path))
     val output = conn.getOutputStream
 
+    if (withStamp)
+      timestamp =  clock.sendStamp(this)
+
     new ObjectOutputStream(output).writeObject(this)
 
     val byteArray = new Array[Byte](4 * 1024)
 
-    if (withStamp)
-      clock.sendStamp(this)
+
 
     Future {
       try {

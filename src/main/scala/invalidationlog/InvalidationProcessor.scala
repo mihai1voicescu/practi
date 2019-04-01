@@ -20,11 +20,11 @@ class InvalidationProcessor(controller: Controller) extends Processor {
     controller.node.checkpoint.getById(invalidation.objId) match {
       case None =>
         controller.log.insert(invalidation)
-        controller.sendInvalidationForAllNeighbours(invalidation)
+        controller.sendInvalidationForAllNeighbours(invalidation, false)
       case Some(checkpointItem) =>
         if (invalidation.timestamp > checkpointItem.timestamp || invalidation.timestamp == checkpointItem.timestamp && invalidation.nodeId < controller.node.id) {
           controller.log.insert(invalidation)
-          controller.sendInvalidationForAllNeighbours(invalidation)
+          controller.sendInvalidationForAllNeighbours(invalidation, false)
         }
     }
 
