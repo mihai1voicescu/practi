@@ -9,6 +9,6 @@ class Clock extends Serializable {
   }
 
   def receiveStamp(obj : ClockInfluencer): Unit = {
-    time = Math.max(obj.timestamp, time) + 1
+    time = Math.max(obj.timestamp, time)
   }
 }
