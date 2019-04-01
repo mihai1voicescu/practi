@@ -69,9 +69,7 @@ class Core(val node: Node) extends Runnable {
           if (node.hasValidBody(name)) {
             logMessage("File valid")
             getFromFile(node.dataDir + name) // uses implicit ContentTypeResolver
-          }
-
-          else {
+          } else {
             logMessage("Requesting body")
             node.controller.requestBody(name)
             val p = Promise[Unit]()
