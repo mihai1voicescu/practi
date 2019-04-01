@@ -145,6 +145,10 @@ case class Controller(node: Node) extends Thread("ControlThread") {
               node.logMessage("Received invalidation with timestamp " + invalidation.timestamp + " for " + invalidation.objId)
 
               if (invalidation.nodeId != node.id) {
+                if (locationTable.contains(invalidation.objId)) {
+                  locationTable.remove(invalidation.objId)
+                }
+
                 node.logMessage("Invalidating")
                 //process the invalidation
                 processors.foreach(p => p.process(invalidation))
