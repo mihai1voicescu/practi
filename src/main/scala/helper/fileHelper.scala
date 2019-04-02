@@ -20,7 +20,7 @@ object fileHelper {
   }
 
   def tempDestination(fileInfo: FileInfo): File =
-    File.createTempFile(fileInfo.fileName, ".tmp")
+    File.createTempFile(fileInfo.fileName + "temp", ".tmp")
 
   def makeUnix(str: String): String = {
     var s = if (str.charAt(0) == '/') str.substring(1) else str
